@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>外来プロジェクト 開局スケジュール</title>
+<style>
+  :root {
+    --primary: #1a73e8;
+    --koshigaya: #4285f4;
+    --kiyose: #34a853;
+    --critical: #ea4335;
+    --warning: #fbbc04;
+    --done: #0d652d;
+    --bg: #f8f9fa;
+    --surface: #ffffff;
+    --text: #202124;
+    --border: #dadce0;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', 'Meiryo', sans-serif; background: var(--bg); color: var(--text); }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .header h1 { font-size: 20px; font-weight: 500; }
+  .header .subtitle { color: #5f6368; font-size: 14px; }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    padding: 12px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+    flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 12px; height: 12px; border-radius: 3px;
+  }
+
+  .container { padding: 16px 24px; overflow-x: auto; }
+
+  .gantt-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gantt-table {
+    width: 100%;
+    min-width: 1200px;
+    border-collapse: collapse;
+  }
+
+  .gantt-table th, .gantt-table td {
+    border: 1px solid var(--border);
+    padding: 0;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  /* Header rows */
+  .month-header th {
+    background: #e8eaed;
+    padding: 6px 4px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .week-header th {
+    background: #f1f3f4;
+    padding: 4px 2px;
+    font-weight: 400;
+    font-size: 11px;
+    color: #5f6368;
+  }
+
+  /* Today marker */
+  .today { background: #fff3e0 !important; }
+
+  /* Category header */
+  .category-row td {
+    background: #e8f0fe;
+    padding: 6px 12px;
+    font-weight: 600;
+    text-align: left;
+    font-size: 13px;
+    color: var(--primary);
+  }
+  .category-row.koshigaya td { background: #d2e3fc; color: #1967d2; }
+  .category-row.kiyose td { background: #ceead6; color: #137333; }
+
+  /* Task rows */
+  .task-row td {
+    padding: 0;
+    height: 28px;
+  }
+  .task-row td:first-child {
+    text-align: left;
+    padding: 4px 8px 4px 20px;
+    white-space: nowrap;
+    font-size: 12px;
+    min-width: 220px;
+    background: var(--surface);
+  }
+  .task-row td:nth-child(2) {
+    min-width: 70px;
+    font-size: 11px;
+    color: #5f6368;
+    background: var(--surface);
+  }
+
+  /* Bar cells */
+  .bar-cell { position: relative; }
+  .bar {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    border-radius: 3px;
+    left: 2px;
+    right: 2px;
+  }
+  .bar.koshigaya { background: var(--koshigaya); opacity: 0.7; }
+  .bar.kiyose { background: var(--kiyose); opacity: 0.7; }
+  .bar.critical { background: var(--critical); opacity: 0.7; }
+  .bar.done { background: var(--done); opacity: 0.7; }
+  .bar.warning { background: var(--warning); opacity: 0.7; }
+
+  /* Milestone */
+  .milestone {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+  .milestone.koshigaya { background: var(--koshigaya); }
+  .milestone.kiyose { background: var(--kiyose); }
+  .milestone.critical { background: var(--critical); }
+
+  /* Summary section */
+  .summary {
+    padding: 16px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .summary-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid;
+  }
+  .summary-card.koshigaya h3 { border-color: var(--koshigaya); }
+  .summary-card.kiyose h3 { border-color: var(--kiyose); }
+  .summary-card ul {
+    list-style: none;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .summary-card li::before { content: '• '; color: #5f6368; }
+  .summary-card li.done::before { content: '✅ '; }
+  .summary-card li.progress::before { content: '🔄 '; }
+  .summary-card li.upcoming::before { content: '⏳ '; }
+  .summary-card li.critical::before { content: '🔴 '; }
+
+  .updated {
+    text-align: right;
+    padding: 8px 24px;
+    font-size: 11px;
+    color: #5f6368;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>外来プロジェクト 開局スケジュール</h1>
+  <span class="subtitle">越谷（7月） / 清瀬（8月）</span>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--koshigaya)"></div>越谷（南越谷）</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--kiyose)"></div>清瀬</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--done)"></div>完了</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div>クリティカル</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>要注意</div>
+</div>
+
+<div class="container">
+<div class="gantt-wrapper">
+<table class="gantt-table" id="ganttTable">
+</table>
+</div>
+</div>
+
+<div class="summary">
+  <div class="summary-card koshigaya">
+    <h3>越谷（南越谷）— 7月オープン</h3>
+    <ul>
+      <li class="done">テナント1番手確保・仲介料500万に減額合意</li>
+      <li class="done">内見実施（中はきれい・そのまま使えるレベル）</li>
+      <li class="done">渋谷内装に図面起こし依頼</li>
+      <li class="done">越谷市役所で自立支援・トイレ確認済み</li>
+      <li class="done">採用：JS-139046（管理薬剤師候補）面接依頼済み</li>
+      <li class="progress">テナント契約（5/1予定）</li>
+      <li class="upcoming">内装 現地打ち合わせ（日程調整中）</li>
+      <li class="critical">レセコン（シグマ）・調剤機器（ユヤマ）発注 — 早期必要</li>
+      <li class="upcoming">保健所検査 → 厚生局7/1指定</li>
+    </ul>
+  </div>
+  <div class="summary-card kiyose">
+    <h3>清瀬 — 8月オープン</h3>
+    <ul>
+      <li class="done">テナント申し込み1番手確保</li>
+      <li class="done">事業性分析レポート作成</li>
+      <li class="done">内装 現地打ち合わせ済み（4/23）</li>
+      <li class="progress">保証審査中（ACRE長屋より書類提出済み）</li>
+      <li class="done">採用：JS-139109（リーダー候補）面接依頼済み</li>
+      <li class="upcoming">テナント契約</li>
+      <li class="upcoming">内装図面・見積確定</li>
+      <li class="critical">レセコン（シグマ）・調剤機器（ユヤマ）発注 — 早期必要</li>
+      <li class="upcoming">保健所検査 → 厚生局8/1指定</li>
+    </ul>
+  </div>
+</div>
+
+<div class="updated" id="updatedAt"></div>
+
+<script>
+const TASKS = [
+  // category, task, assignee, store, startWeek, endWeek, status
+  // Weeks: 4/W4=0, 5/W1=1, 5/W2=2, 5/W3=3, 5/W4=4, 6/W1=5, 6/W2=6, 6/W3=7, 6/W4=8, 7/W1=9, 7/W2=10, 7/W3=11, 7/W4=12, 8/W1=13, 8/W2=14, 8/W3=15, 8/W4=16
+
+  // === 越谷 ===
+  { cat: '越谷｜契約', tasks: [
+    { name: 'テナント契約締結', who: '山内/森田', s: 0, e: 1, st: 'progress', store: 'k' },
+    { name: '初期費用払込', who: '森田', s: 1, e: 2, st: '', store: 'k' },
+  ]},
+  { cat: '越谷｜内装', tasks: [
+    { name: '現地打ち合わせ', who: '渋谷内装', s: 0, e: 1, st: 'warning', store: 'k' },
+    { name: '図面確定・見積', who: '渋谷内装', s: 1, e: 3, st: '', store: 'k' },
+    { name: '内装施工', who: '渋谷内装', s: 3, e: 7, st: '', store: 'k' },
+    { name: '消防確認', who: '渋谷内装', s: 6, e: 7, st: '', store: 'k' },
+  ]},
+  { cat: '越谷｜設備', tasks: [
+    { name: 'レセコン見積・発注（ファーミー）', who: '取締役C/管理部A', s: 0, e: 2, st: 'critical', store: 'k' },
+    { name: '調剤機器見積・発注（ユヤマ）', who: '根木', s: 0, e: 2, st: 'critical', store: 'k' },
+    { name: 'レセコン納品・設置', who: 'ファーミー', s: 6, e: 8, st: '', store: 'k' },
+    { name: '調剤機器納品・設置', who: 'ユヤマ', s: 7, e: 8, st: '', store: 'k' },
+    { name: 'Musubi・オン資セットアップ', who: '管理部A', s: 8, e: 9, st: '', store: 'k' },
+  ]},
+  { cat: '越谷｜許認可', tasks: [
+    { name: '管理薬剤師確定', who: '山内', s: 0, e: 4, st: 'warning', store: 'k' },
+    { name: '保健所事前相談', who: '薬剤師B/管理部A', s: 2, e: 3, st: '', store: 'k' },
+    { name: '保健所検査', who: '薬剤師B', s: 7, e: 8, st: '', store: 'k' },
+    { name: '厚生局指定申請', who: '薬剤師B', s: 7, e: 9, st: '', store: 'k' },
+    { name: '公費申請（自立支援等）', who: '薬剤師B', s: 3, e: 8, st: '', store: 'k' },
+  ]},
+  { cat: '越谷｜採用', tasks: [
+    { name: '管理薬剤師 面接', who: '山内', s: 0, e: 2, st: 'progress', store: 'k' },
+    { name: '追加スタッフ採用', who: '薬剤師B', s: 2, e: 8, st: '', store: 'k' },
+  ]},
+  { cat: '越谷｜オープン準備', tasks: [
+    { name: '医薬品初期発注', who: '管理薬剤師', s: 8, e: 9, st: '', store: 'k' },
+    { name: '★ 越谷オープン', who: '', s: 9, e: 9, st: 'milestone', store: 'k' },
+  ]},
+
+  // === 清瀬 ===
+  { cat: '清瀬｜契約', tasks: [
+    { name: '保証審査', who: 'ACRE長屋', s: 0, e: 2, st: 'progress', store: 'c' },
+    { name: 'テナント契約締結', who: '山内/森田', s: 2, e: 4, st: '', store: 'c' },
+    { name: '初期費用払込', who: '森田', s: 4, e: 5, st: '', store: 'c' },
+  ]},
+  { cat: '清瀬｜内装', tasks: [
+    { name: '現地打ち合わせ', who: '渋谷内装', s: 0, e: 0, st: 'done', store: 'c' },
+    { name: '図面確定・見積', who: '渋谷内装', s: 0, e: 3, st: 'progress', store: 'c' },
+    { name: '内装施工（スケルトン）', who: '渋谷内装', s: 4, e: 10, st: '', store: 'c' },
+    { name: '消防確認', who: '渋谷内装', s: 9, e: 10, st: '', store: 'c' },
+  ]},
+  { cat: '清瀬｜設備', tasks: [
+    { name: 'レセコン見積・発注（ファーミー）', who: '取締役C/管理部A', s: 1, e: 3, st: 'critical', store: 'c' },
+    { name: '調剤機器見積・発注（ユヤマ）', who: '根木', s: 1, e: 3, st: 'critical', store: 'c' },
+    { name: 'レセコン納品・設置', who: 'ファーミー', s: 10, e: 12, st: '', store: 'c' },
+    { name: '調剤機器納品・設置', who: 'ユヤマ', s: 11, e: 12, st: '', store: 'c' },
+    { name: 'Musubi・オン資セットアップ', who: '管理部A', s: 12, e: 13, st: '', store: 'c' },
+  ]},
+  { cat: '清瀬｜許認可', tasks: [
+    { name: '管理薬剤師確定', who: '山内', s: 0, e: 6, st: '', store: 'c' },
+    { name: '保健所事前相談', who: '薬剤師B/管理部A', s: 4, e: 5, st: '', store: 'c' },
+    { name: '保健所検査', who: '薬剤師B', s: 10, e: 11, st: '', store: 'c' },
+    { name: '厚生局指定申請', who: '薬剤師B', s: 11, e: 13, st: '', store: 'c' },
+    { name: '公費申請', who: '薬剤師B', s: 5, e: 12, st: '', store: 'c' },
+  ]},
+  { cat: '清瀬｜採用', tasks: [
+    { name: 'リーダー 面接', who: '山内', s: 0, e: 2, st: 'progress', store: 'c' },
+    { name: '追加スタッフ採用', who: '薬剤師B', s: 3, e: 12, st: '', store: 'c' },
+  ]},
+  { cat: '清瀬｜オープン準備', tasks: [
+    { name: 'リーダー越谷で研修', who: 'リーダー', s: 9, e: 13, st: '', store: 'c' },
+    { name: '医薬品初期発注', who: '管理薬剤師', s: 12, e: 13, st: '', store: 'c' },
+    { name: '★ 清瀬オープン', who: '', s: 13, e: 13, st: 'milestone', store: 'c' },
+  ]},
+];
+
+const WEEKS = [
+  { month: '4月', weeks: ['W4'] },
+  { month: '5月', weeks: ['W1','W2','W3','W4'] },
+  { month: '6月', weeks: ['W1','W2','W3','W4'] },
+  { month: '7月', weeks: ['W1','W2','W3','W4'] },
+  { month: '8月', weeks: ['W1','W2','W3','W4'] },
+];
+
+function render() {
+  const table = document.getElementById('ganttTable');
+  let totalWeeks = 0;
+  WEEKS.forEach(m => totalWeeks += m.weeks.length);
+
+  // Today's week index (April W4 = 0)
+  const now = new Date();
+  const apr21 = new Date(2026, 3, 20); // April 20 = start of W4
+  const todayWeek = Math.floor((now - apr21) / (7 * 86400000));
+
+  // Month header
+  let monthRow = '<tr class="month-header"><th style="min-width:220px">タスク</th><th style="min-width:70px">担当</th>';
+  WEEKS.forEach(m => {
+    monthRow += `<th colspan="${m.weeks.length}">${m.month}</th>`;
+  });
+  monthRow += '</tr>';
+
+  // Week header
+  let weekRow = '<tr class="week-header"><th></th><th></th>';
+  let weekIdx = 0;
+  WEEKS.forEach(m => {
+    m.weeks.forEach(w => {
+      const cls = weekIdx === todayWeek ? ' class="today"' : '';
+      weekRow += `<th${cls}>${w}</th>`;
+      weekIdx++;
+    });
+  });
+  weekRow += '</tr>';
+
+  let body = '';
+
+  TASKS.forEach(group => {
+    const isK = group.cat.startsWith('越谷');
+    const catClass = isK ? 'koshigaya' : 'kiyose';
+    body += `<tr class="category-row ${catClass}"><td colspan="${totalWeeks + 2}">${group.cat}</td></tr>`;
+
+    group.tasks.forEach(task => {
+      const storeClass = task.store === 'k' ? 'koshigaya' : 'kiyose';
+      let statusClass = storeClass;
+      if (task.st === 'done') statusClass = 'done';
+      if (task.st === 'critical') statusClass = 'critical';
+      if (task.st === 'warning') statusClass = 'warning';
+
+      body += `<tr class="task-row"><td>${task.name}</td><td>${task.who}</td>`;
+
+      let wi = 0;
+      WEEKS.forEach(m => {
+        m.weeks.forEach(w => {
+          const cls = wi === todayWeek ? ' today' : '';
+          if (task.st === 'milestone' && wi === task.s) {
+            body += `<td class="bar-cell${cls}"><div class="milestone ${statusClass}"></div></td>`;
+          } else if (wi >= task.s && wi <= task.e) {
+            let barStyle = '';
+            if (wi === task.s) barStyle += 'border-radius: 3px 0 0 3px;';
+            if (wi === task.e) barStyle += 'border-radius: 0 3px 3px 0;';
+            if (wi === task.s && wi === task.e) barStyle = 'border-radius: 3px;';
+            body += `<td class="bar-cell${cls}"><div class="bar ${statusClass}" style="${barStyle}"></div></td>`;
+          } else {
+            body += `<td class="${cls}"></td>`;
+          }
+          wi++;
+        });
+      });
+      body += '</tr>';
+    });
+  });
+
+  table.innerHTML = monthRow + weekRow + body;
+  document.getElementById('updatedAt').textContent = `最終更新: ${new Date().toLocaleString('ja-JP')}`;
+}
+
+render();
+</script>
+</body>
+</html>
