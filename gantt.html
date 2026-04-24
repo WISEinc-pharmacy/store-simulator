@@ -181,6 +181,60 @@
   .summary-card li.upcoming::before { content: '⏳ '; }
   .summary-card li.critical::before { content: '🔴 '; }
 
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .filter-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .filter-label {
+    font-size: 13px;
+    color: #5f6368;
+    font-weight: 500;
+    margin-right: 4px;
+  }
+  .filter-btn {
+    padding: 6px 16px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: #5f6368;
+    border-radius: 20px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .filter-btn:hover {
+    background: #f1f3f4;
+    color: var(--text);
+  }
+  .filter-btn.active {
+    background: #1a73e8;
+    color: #fff;
+    border-color: #1a73e8;
+  }
+  .filter-btn.active[data-filter="k"] {
+    background: var(--koshigaya);
+    border-color: var(--koshigaya);
+  }
+  .filter-btn.active[data-filter="c"] {
+    background: var(--kiyose);
+    border-color: var(--kiyose);
+  }
+  .legend-inline {
+    display: flex;
+    gap: 14px;
+    font-size: 12px;
+  }
+
   .updated {
     text-align: right;
     padding: 8px 24px;
@@ -196,12 +250,20 @@
   <span class="subtitle">越谷（7月） / 清瀬（8月）</span>
 </div>
 
-<div class="legend">
-  <div class="legend-item"><div class="legend-dot" style="background:var(--koshigaya)"></div>越谷（南越谷）</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--kiyose)"></div>清瀬</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--done)"></div>完了</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div>クリティカル</div>
-  <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>要注意</div>
+<div class="filter-bar">
+  <div class="filter-group">
+    <span class="filter-label">表示:</span>
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">2事業所</button>
+    <button class="filter-btn" data-filter="k" onclick="setFilter('k')">越谷のみ</button>
+    <button class="filter-btn" data-filter="c" onclick="setFilter('c')">清瀬のみ</button>
+  </div>
+  <div class="legend-inline">
+    <div class="legend-item"><div class="legend-dot" style="background:var(--koshigaya)"></div>越谷</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--kiyose)"></div>清瀬</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--done)"></div>完了</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--critical)"></div>クリティカル</div>
+    <div class="legend-item"><div class="legend-dot" style="background:var(--warning)"></div>要注意</div>
+  </div>
 </div>
 
 <div class="container">
@@ -222,7 +284,7 @@
       <li class="done">採用：JS-139046（管理薬剤師候補）面接依頼済み</li>
       <li class="progress">テナント契約（5/1予定）</li>
       <li class="upcoming">内装 現地打ち合わせ（日程調整中）</li>
-      <li class="critical">レセコン（シグマ）・調剤機器（ユヤマ）発注 — 早期必要</li>
+      <li class="critical">レセコン（ファーミー）・調剤機器（ユヤマ）発注 — 早期必要</li>
       <li class="upcoming">保健所検査 → 厚生局7/1指定</li>
     </ul>
   </div>
@@ -236,7 +298,7 @@
       <li class="done">採用：JS-139109（リーダー候補）面接依頼済み</li>
       <li class="upcoming">テナント契約</li>
       <li class="upcoming">内装図面・見積確定</li>
-      <li class="critical">レセコン（シグマ）・調剤機器（ユヤマ）発注 — 早期必要</li>
+      <li class="critical">レセコン（ファーミー）・調剤機器（ユヤマ）発注 — 早期必要</li>
       <li class="upcoming">保健所検査 → 厚生局8/1指定</li>
     </ul>
   </div>
@@ -361,6 +423,11 @@ function render() {
 
   TASKS.forEach(group => {
     const isK = group.cat.startsWith('越谷');
+    const storeKey = isK ? 'k' : 'c';
+
+    // Apply filter
+    if (currentFilter !== 'all' && currentFilter !== storeKey) return;
+
     const catClass = isK ? 'koshigaya' : 'kiyose';
     body += `<tr class="category-row ${catClass}"><td colspan="${totalWeeks + 2}">${group.cat}</td></tr>`;
 
@@ -397,6 +464,26 @@ function render() {
 
   table.innerHTML = monthRow + weekRow + body;
   document.getElementById('updatedAt').textContent = `最終更新: ${new Date().toLocaleString('ja-JP')}`;
+}
+
+let currentFilter = 'all';
+
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  render();
+
+  // Show/hide summary cards
+  const kCard = document.querySelector('.summary-card.koshigaya');
+  const cCard = document.querySelector('.summary-card.kiyose');
+  const summaryDiv = document.querySelector('.summary');
+  if (kCard && cCard && summaryDiv) {
+    kCard.style.display = (filter === 'c') ? 'none' : 'block';
+    cCard.style.display = (filter === 'k') ? 'none' : 'block';
+    summaryDiv.style.gridTemplateColumns = (filter === 'all') ? '1fr 1fr' : '1fr';
+  }
 }
 
 render();
