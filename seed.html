@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Seed Data - Store Simulator</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+body{font-family:sans-serif;background:#0f172a;color:#f1f5f9;padding:40px;max-width:800px;margin:0 auto}
+h1{color:#3b82f6}
+.btn{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;cursor:pointer;margin:8px 4px}
+.btn-login{background:#3b82f6;color:#fff}
+.btn-seed{background:#10b981;color:#fff;font-size:1.2rem;padding:16px 32px}
+.btn-seed:disabled{background:#334155;cursor:not-allowed}
+#log{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-top:20px;white-space:pre-wrap;font-family:monospace;font-size:0.9rem;max-height:600px;overflow-y:auto}
+.ok{color:#10b981}.err{color:#ef4444}.info{color:#f59e0b}
+</style>
+</head>
+<body>
+<h1>Store Simulator - Data Seeder</h1>
+<p>越谷（南越谷）と清瀬のデータをFirestoreに投入します。</p>
+<div id="auth-section">
+  <button class="btn btn-login" onclick="doLogin()">Googleでログイン</button>
+  <span id="user-info" style="margin-left:12px"></span>
+</div>
+<div style="margin-top:20px">
+  <button class="btn btn-seed" id="seed-btn" disabled onclick="runSeed()">データ投入実行</button>
+</div>
+<div id="log"></div>
+
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",
+  authDomain:"wise-store-sim.firebaseapp.com",
+  projectId:"wise-store-sim",
+  storageBucket:"wise-store-sim.firebasestorage.app",
+  messagingSenderId:"301306058235",
+  appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"
+});
+const auth=firebase.auth(), db=firebase.firestore();
+
+function log(msg, cls=''){
+  const el=document.getElementById('log');
+  el.innerHTML+=`<span class="${cls}">${msg}</span>\n`;
+  el.scrollTop=el.scrollHeight;
+}
+
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}
+
+auth.onAuthStateChanged(user=>{
+  if(user){
+    document.getElementById('user-info').textContent=`ログイン: ${user.email}`;
+    document.getElementById('seed-btn').disabled=false;
+    log(`Authenticated as ${user.email}`,'ok');
+  }
+});
+
+// --- Shared definitions ---
+const master={techFeePerRx:1838,drugCostPerRx:4434,techFeePerHC:17556,drugCostPerHC:18564};
+const staffTypes=[
+  {name:'管理薬剤師',monthlySalary:550000},
+  {name:'常勤薬剤師',monthlySalary:450000},
+  {name:'パート薬剤師',monthlySalary:250000},
+  {name:'一般事務',monthlySalary:230000},
+  {name:'訪問薬剤師',monthlySalary:550000},
+  {name:'パート事務',monthlySalary:180000},
+];
+
+function calcRow(r,settings){
+  const m=master,s=settings,st=staffTypes;
+  r.techOutpatient=(r.rxCount||0)*m.techFeePerRx;
+  r.drugOutpatient=(r.rxCount||0)*m.drugCostPerRx;
+  r.techHomecare=(r.homecareCount||0)*m.techFeePerHC;
+  r.drugHomecare=(r.homecareCount||0)*m.drugCostPerHC;
+  r.regionalSupport=(r.month>=s.regionalStartMonth)?s.regionalSupport:0;
+  r.concentrationRate=Math.max(0,(s.baseConcentration||50)-(r.homecareCount||0)*(s.concentrationDecay||0.06));
+  r.revenue=r.techOutpatient+r.regionalSupport+r.techHomecare+r.drugOutpatient+r.drugHomecare;
+  r.cogs=Math.round(r.revenue*s.costRatio);
+  r.grossProfit=r.revenue-r.cogs;
+  r.staffOutpatient=(s.staffOutpatientList||[]).reduce((sum,e)=>{
+    const t=st[e.typeIdx];if(!t)return sum;
+    return sum+t.monthlySalary*(e.count||0);
+  },0);
+  r.staffHomecare=(s.staffHomecareList||[]).reduce((sum,e)=>{
+    const t=st[e.typeIdx];if(!t)return sum;
+    if(e.startMonth&&r.month<e.startMonth)return sum;
+    return sum+t.monthlySalary*(e.count||0);
+  },0);
+  r.rent=s.rent;
+  r.otherOutpatient=Math.round(r.techOutpatient*s.otherCostRatio);
+  r.otherHomecare=Math.round(r.techHomecare*s.otherCostRatio);
+  r.operatingProfit=r.grossProfit-r.staffOutpatient-r.staffHomecare-r.rent-r.otherOutpatient-r.otherHomecare;
+  r.opProfitNoRegional=r.operatingProfit-r.regionalSupport;
+  const tech=r.techOutpatient+r.techHomecare,staff=r.staffOutpatient+r.staffHomecare;
+  r.techLaborRatio=tech>0?(staff/tech*100):0;
+  return r;
+}
+
+function buildMonths(rxFn,hcFn,settings){
+  return Array.from({length:48},(_,i)=>{
+    const month=i+1;
+    const r={month,year:Math.ceil(month/12),phase:Math.ceil(month/12)<=1?1:Math.ceil(month/12)<=2?2:Math.ceil(month/12)<=3?3:4,
+      rxCount:rxFn(month),homecareCount:hcFn(month),note:''};
+    return calcRow(r,settings);
+  });
+}
+
+// ======= 越谷 =======
+function buildKoshigaya(){
+  const inv={
+    equipment:[{label:"仲介手数料",value:5500000},{label:"分包機類",value:8000000},{label:"内装費",value:3300000}],
+    working:[{label:"運転資金（人件費）",value:3432000},{label:"運転資金（固定費）",value:365760},{label:"運転資金（売掛金）",value:16817400},{label:"テナント初期費用",value:6204000},{label:"行政申請",value:100000}],
+    depreciationMonths:120
+  };
+
+  // 保守: 900枚, 人件費146.4万, 在宅なし
+  const consSettings={costRatio:0.6525,regionalSupport:0,regionalStartMonth:999,rent:440000,otherCostRatio:0.08,
+    baseConcentration:100,concentrationDecay:0,
+    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:1},{typeIdx:3,count:2}],
+    staffHomecareList:[]};
+
+  // 標準: 900枚+在宅, 171.6万, 在宅6月1件→24月50件, 訪問薬剤師m8
+  const stdSettings={costRatio:0.6525,regionalSupport:0,regionalStartMonth:999,rent:440000,otherCostRatio:0.08,
+    baseConcentration:100,concentrationDecay:0.2,
+    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:1},{typeIdx:3,count:2},{typeIdx:2,count:1}],
+    staffHomecareList:[{typeIdx:4,count:1,startMonth:8}]};
+
+  function stdHC(m){if(m<6)return 0;if(m>=24)return 50;return Math.round(1+(50-1)*(m-6)/(24-6));}
+
+  // 楽観: 1430枚, 277.2万, 在宅なし
+  const optSettings={costRatio:0.6525,regionalSupport:0,regionalStartMonth:999,rent:440000,otherCostRatio:0.08,
+    baseConcentration:100,concentrationDecay:0,
+    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:4},{typeIdx:3,count:1},{typeIdx:5,count:1}],
+    staffHomecareList:[]};
+
+  return {
+    name:"越谷（南越谷）",master:{...master},staffTypes:JSON.parse(JSON.stringify(staffTypes)),investment:inv,
+    scenarios:[
+      {name:"楽観",settings:optSettings,months:buildMonths(()=>1430,()=>0,optSettings)},
+      {name:"標準",settings:stdSettings,months:buildMonths(()=>900,stdHC,stdSettings)},
+      {name:"保守",settings:consSettings,months:buildMonths(()=>900,()=>0,consSettings)},
+    ],
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser.email
+  };
+}
+
+// ======= 清瀬 =======
+function buildKiyose(){
+  const inv={
+    equipment:[{label:"分包機類",value:8000000},{label:"内装費（スケルトン）",value:10000000}],
+    working:[{label:"運転資金（人件費）",value:2112000},{label:"運転資金（固定費）",value:222000},{label:"運転資金（売掛金）",value:6585000},{label:"テナント初期費用",value:3556200},{label:"行政申請",value:100000}],
+    depreciationMonths:120
+  };
+
+  // 保守: 880枚, 118.8万, 在宅なし
+  const consSettings={costRatio:0.6525,regionalSupport:0,regionalStartMonth:999,rent:473000,otherCostRatio:0.08,
+    baseConcentration:100,concentrationDecay:0,
+    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:1},{typeIdx:5,count:1}],
+    staffHomecareList:[]};
+
+  // 標準: 880枚+在宅, 118.8万, 訪問薬剤師m14, 在宅3月→100件, 地域支援m29
+  const stdSettings={costRatio:0.6525,regionalSupport:281600,regionalStartMonth:29,rent:473000,otherCostRatio:0.08,
+    baseConcentration:100,concentrationDecay:0.185,
+    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:1},{typeIdx:5,count:1}],
+    staffHomecareList:[{typeIdx:4,count:1,startMonth:14}]};
+
+  function stdHC(m){if(m<3)return 0;if(m>=48)return 100;return Math.round((m-3)/(48-3)*100);}
+
+  // 楽観: 1600枚, 210万, 集中率50%, 地域支援512000(m1), 在宅m15から
+  const optSettings={costRatio:0.6525,regionalSupport:512000,regionalStartMonth:1,rent:473000,otherCostRatio:0.08,
+    baseConcentration:50,concentrationDecay:0,
+    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:1},{typeIdx:2,count:1},{typeIdx:3,count:2},{typeIdx:5,count:2}],
+    staffHomecareList:[{typeIdx:4,count:1,startMonth:15}]};
+
+  function optHC(m){if(m<15)return 0;return Math.round((m-15)/(48-15)*50);}
+
+  return {
+    name:"清瀬",master:{...master},staffTypes:JSON.parse(JSON.stringify(staffTypes)),investment:inv,
+    scenarios:[
+      {name:"楽観",settings:optSettings,months:buildMonths(()=>1600,optHC,optSettings)},
+      {name:"標準",settings:stdSettings,months:buildMonths(()=>880,stdHC,stdSettings)},
+      {name:"保守",settings:consSettings,months:buildMonths(()=>880,()=>0,consSettings)},
+    ],
+    updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:auth.currentUser.email
+  };
+}
+
+async function runSeed(){
+  const btn=document.getElementById('seed-btn');
+  btn.disabled=true;
+  btn.textContent='投入中...';
+
+  try{
+    log('Building 越谷（南越谷） data...','info');
+    const k=buildKoshigaya();
+    log(`  楽観: ${k.scenarios[0].months.length}ヶ月, rxCount=${k.scenarios[0].months[0].rxCount}`);
+    log(`  標準: ${k.scenarios[1].months.length}ヶ月, rxCount=${k.scenarios[1].months[0].rxCount}, hc@m24=${k.scenarios[1].months[23].homecareCount}`);
+    log(`  保守: ${k.scenarios[2].months.length}ヶ月, rxCount=${k.scenarios[2].months[0].rxCount}`);
+
+    const ref1=await db.collection('store_simulations').add(k);
+    log(`OK: 越谷（南越谷） -> ${ref1.id}`,'ok');
+
+    log('Building 清瀬 data...','info');
+    const y=buildKiyose();
+    log(`  楽観: ${y.scenarios[0].months.length}ヶ月, rxCount=${y.scenarios[0].months[0].rxCount}`);
+    log(`  標準: ${y.scenarios[1].months.length}ヶ月, rxCount=${y.scenarios[1].months[0].rxCount}, hc@m48=${y.scenarios[1].months[47].homecareCount}`);
+    log(`  保守: ${y.scenarios[2].months.length}ヶ月, rxCount=${y.scenarios[2].months[0].rxCount}`);
+
+    const ref2=await db.collection('store_simulations').add(y);
+    log(`OK: 清瀬 -> ${ref2.id}`,'ok');
+
+    log('\n=== DONE: 2 documents created ===','ok');
+
+    // Also add the user to store_sim_users if not already there
+    const userDoc=await db.collection('store_sim_users').doc(auth.currentUser.email).get();
+    if(!userDoc.exists){
+      await db.collection('store_sim_users').doc(auth.currentUser.email).set({
+        email:auth.currentUser.email,name:auth.currentUser.displayName,role:'admin',
+        createdAt:firebase.firestore.FieldValue.serverTimestamp()
+      });
+      log(`User ${auth.currentUser.email} added as admin`,'info');
+    }
+  }catch(e){
+    log(`ERROR: ${e.message}`,'err');
+    console.error(e);
+  }
+  btn.textContent='完了';
+}
+</script>
+</body>
+</html>
