@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="UTF-8">
+<title>Delete opening_tasks</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>body{font-family:sans-serif;background:#f8f9fa;padding:40px;max-width:600px;margin:0 auto;text-align:center}
+button{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;cursor:pointer;margin:8px}
+.login{background:#1a73e8;color:#fff}
+.delete{background:#ea4335;color:#fff;font-size:1.2rem}
+.delete:disabled{background:#ccc;cursor:not-allowed}
+#status{margin-top:20px;font-size:1.1rem}</style>
+</head><body>
+<h1>opening_tasks ドキュメント削除</h1>
+<p>Googleログイン後、削除ボタンを押してください。</p>
+<button class="login" onclick="doLogin()">Googleでログイン</button>
+<br><br>
+<button class="delete" id="del-btn" disabled onclick="doDelete()">opening_tasks/current を削除</button>
+<div id="status"></div>
+<script>
+firebase.initializeApp({
+  apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",
+  authDomain:"wise-store-sim.firebaseapp.com",
+  projectId:"wise-store-sim",
+  storageBucket:"wise-store-sim.firebasestorage.app",
+  messagingSenderId:"301306058235",
+  appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"
+});
+const db = firebase.firestore();
+firebase.auth().onAuthStateChanged(u => {
+  if(u) { document.getElementById('del-btn').disabled = false; document.getElementById('status').textContent = 'ログイン済み: ' + u.email; }
+});
+function doLogin() { firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+async function doDelete() {
+  const s = document.getElementById('status');
+  try {
+    await db.collection('opening_tasks').doc('current').delete();
+    s.textContent = '✅ 削除完了！ガントチャートにアクセスすると初期データが再投入されます。';
+    s.style.color = '#0d652d';
+  } catch(e) {
+    s.textContent = '❌ エラー: ' + e.message;
+    s.style.color = '#ea4335';
+  }
+}
+</script>
+</body></html>
