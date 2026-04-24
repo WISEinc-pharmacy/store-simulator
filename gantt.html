@@ -20,6 +20,30 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', 'Meiryo', sans-serif; background: var(--bg); color: var(--text); }
 
+  .nav-bar {
+    display: flex;
+    gap: 0;
+    background: #1a73e8;
+    padding: 0 24px;
+  }
+  .nav-link {
+    padding: 10px 20px;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-link:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+  }
+  .nav-link.active {
+    color: #fff;
+    background: rgba(255,255,255,0.2);
+    border-bottom: 2px solid #fff;
+  }
+
   .header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
@@ -244,6 +268,12 @@
 </style>
 </head>
 <body>
+
+<nav class="nav-bar">
+  <a href="./" class="nav-link">📊 ダッシュボード</a>
+  <a href="gantt.html" class="nav-link active">📅 ガントチャート</a>
+  <a href="seed.html" class="nav-link">📥 データ投入</a>
+</nav>
 
 <div class="header">
   <h1>外来プロジェクト 開局スケジュール</h1>
