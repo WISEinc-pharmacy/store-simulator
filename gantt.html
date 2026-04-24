@@ -25,6 +25,31 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', 'Meiryo', sans-serif; background: var(--bg); color: var(--text); }
 
+  /* Nav bar */
+  .nav-bar {
+    display: flex;
+    gap: 0;
+    background: #1a73e8;
+    padding: 0 24px;
+  }
+  .nav-link {
+    padding: 10px 20px;
+    color: rgba(255,255,255,0.8);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-link:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+  }
+  .nav-link.active {
+    color: #fff;
+    background: rgba(255,255,255,0.2);
+    border-bottom: 2px solid #fff;
+  }
+
   /* Login */
   #login-screen {
     display: flex; align-items: center; justify-content: center; min-height: 100vh;
@@ -121,6 +146,30 @@
     background: var(--kiyose);
     border-color: var(--kiyose);
   }
+
+  .task-filter-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .task-filter-btn:hover { background: #f1f3f4; }
+  .task-filter-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .toggle-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-secondary); cursor: pointer;
+    margin-left: 8px;
+  }
+  .toggle-label input { cursor: pointer; }
+
   .legend-inline {
     display: flex;
     gap: 14px;
@@ -140,7 +189,7 @@
 
   .gantt-table {
     width: 100%;
-    min-width: 1200px;
+    min-width: 1400px;
     border-collapse: collapse;
   }
 
@@ -177,29 +226,50 @@
   }
   .category-row.koshigaya td { background: #d2e3fc; color: #1967d2; }
   .category-row.kiyose td { background: #ceead6; color: #137333; }
+  .category-row { cursor: pointer; user-select: none; }
+  .category-row:hover td { filter: brightness(0.95); }
+
+  .cat-toggle {
+    display: inline-block;
+    width: 16px;
+    font-size: 11px;
+    margin-right: 4px;
+  }
+  .cat-progress {
+    font-weight: 400;
+    font-size: 11px;
+    margin-left: 8px;
+    opacity: 0.8;
+  }
 
   .task-row td {
     padding: 0;
-    height: 28px;
+    height: 32px;
   }
-  .task-row td:first-child {
+  .task-row td.td-name {
     text-align: left;
-    padding: 4px 8px 4px 20px;
+    padding: 4px 8px 4px 28px;
     white-space: nowrap;
     font-size: 12px;
-    min-width: 220px;
+    min-width: 200px;
     background: var(--surface);
   }
-  .task-row td:nth-child(2) {
-    min-width: 70px;
+  .task-row td.td-who {
+    min-width: 80px;
     font-size: 11px;
     color: var(--text-secondary);
     background: var(--surface);
+    padding: 2px 4px;
   }
-  .task-row.clickable { cursor: pointer; }
-  .task-row.clickable:hover td:first-child,
-  .task-row.clickable:hover td:nth-child(2) {
-    background: #e8f0fe;
+  .task-row td.td-status {
+    min-width: 90px;
+    background: var(--surface);
+    padding: 2px 4px;
+  }
+  .task-row td.td-note {
+    min-width: 120px;
+    background: var(--surface);
+    padding: 2px 4px;
   }
 
   .bar-cell { position: relative; }
@@ -262,86 +332,6 @@
   }
   .progress-text { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
 
-  /* Task list table */
-  .task-list-section {
-    padding: 0 24px 24px;
-  }
-  .task-list-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  .task-list-header h2 {
-    font-size: 16px;
-    font-weight: 600;
-  }
-  .task-filters {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .task-filter-btn {
-    padding: 4px 12px;
-    border: 1px solid var(--border);
-    background: var(--surface);
-    color: var(--text-secondary);
-    border-radius: 16px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .task-filter-btn:hover { background: #f1f3f4; }
-  .task-filter-btn.active {
-    background: var(--primary);
-    color: #fff;
-    border-color: var(--primary);
-  }
-  .toggle-label {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 12px; color: var(--text-secondary); cursor: pointer;
-    margin-left: 8px;
-  }
-  .toggle-label input { cursor: pointer; }
-
-  .task-table-wrapper {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow-x: auto;
-  }
-  .task-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 12px;
-    min-width: 900px;
-  }
-  .task-table th {
-    background: #e8eaed;
-    padding: 8px 10px;
-    text-align: left;
-    font-weight: 600;
-    font-size: 12px;
-    color: var(--text);
-    border-bottom: 2px solid var(--border);
-    white-space: nowrap;
-    position: sticky;
-    top: 0;
-    z-index: 5;
-  }
-  .task-table td {
-    padding: 6px 10px;
-    border-bottom: 1px solid #f1f3f4;
-    vertical-align: middle;
-  }
-  .task-table tbody tr:hover { background: #f8f9fa; }
-  .task-table tbody tr.highlighted { background: #e8f0fe; }
-  .task-table tbody tr[data-store="k"] td.store-cell { color: #1967d2; font-weight: 500; }
-  .task-table tbody tr[data-store="c"] td.store-cell { color: #137333; font-weight: 500; }
-
   .status-select {
     padding: 3px 6px;
     border: 1px solid var(--border);
@@ -364,7 +354,7 @@
     border-radius: 4px;
     font-size: 11px;
     width: 100%;
-    min-width: 120px;
+    min-width: 100px;
     background: transparent;
     color: var(--text);
     font-family: inherit;
@@ -396,8 +386,6 @@
     color: var(--text-secondary);
   }
 
-  .week-label { font-size: 11px; color: var(--text-secondary); }
-
   @media(max-width:768px){
     .summary { grid-template-columns: 1fr; }
     .header { flex-direction: column; align-items: flex-start; }
@@ -422,6 +410,12 @@
 <!-- Main app -->
 <div id="main-app">
 
+<nav class="nav-bar">
+  <a href="./" class="nav-link">📊 ダッシュボード</a>
+  <a href="gantt.html" class="nav-link active">📅 ガントチャート</a>
+  <a href="seed.html" class="nav-link">📥 データ投入</a>
+</nav>
+
 <div class="header">
   <div class="header-left">
     <h1>外来プロジェクト 開局スケジュール</h1>
@@ -433,17 +427,30 @@
       <span id="user-name"></span>
       <span id="role-badge" class="role-badge"></span>
     </div>
-    <a href="index.html" class="btn-sm">収益シミュレーション</a>
     <button class="btn-sm" onclick="doLogout()">ログアウト</button>
   </div>
 </div>
 
 <div class="filter-bar">
   <div class="filter-group">
-    <span class="filter-label">表示:</span>
+    <span class="filter-label">店舗:</span>
     <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">2事業所</button>
     <button class="filter-btn" data-filter="k" onclick="setFilter('k')">越谷のみ</button>
     <button class="filter-btn" data-filter="c" onclick="setFilter('c')">清瀬のみ</button>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">カテゴリ:</span>
+    <button class="task-filter-btn active" data-cat="all" onclick="setCatFilter('all')">すべて</button>
+    <button class="task-filter-btn" data-cat="契約" onclick="setCatFilter('契約')">契約</button>
+    <button class="task-filter-btn" data-cat="内装" onclick="setCatFilter('内装')">内装</button>
+    <button class="task-filter-btn" data-cat="設備" onclick="setCatFilter('設備')">設備</button>
+    <button class="task-filter-btn" data-cat="許認可" onclick="setCatFilter('許認可')">許認可</button>
+    <button class="task-filter-btn" data-cat="採用" onclick="setCatFilter('採用')">採用</button>
+    <button class="task-filter-btn" data-cat="オープン準備" onclick="setCatFilter('オープン準備')">オープン準備</button>
+    <label class="toggle-label">
+      <input type="checkbox" id="incompleteToggle" onchange="renderAll()">
+      未完了のみ
+    </label>
   </div>
   <div class="legend-inline">
     <div class="legend-item"><div class="legend-dot" style="background:var(--koshigaya)"></div>越谷</div>
@@ -476,7 +483,7 @@
       <li>採用：JS-139046（管理薬剤師候補）面接依頼済み</li>
       <li>テナント契約（5/1予定）</li>
       <li>内装 現地打ち合わせ（日程調整中）</li>
-      <li>レセコン（ファーミー）・調剤機器（ユヤマ）発注 -- 早期必要</li>
+      <li>レセコン（モイネット）・調剤機器（ユヤマ）発注 -- 早期必要</li>
       <li>保健所検査 → 厚生局7/1指定</li>
     </ul>
   </div>
@@ -493,47 +500,9 @@
       <li>採用：JS-139109（リーダー候補）面接依頼済み</li>
       <li>テナント契約</li>
       <li>内装図面・見積確定</li>
-      <li>レセコン（ファーミー）・調剤機器（ユヤマ）発注 -- 早期必要</li>
+      <li>レセコン（モイネット）・調剤機器（ユヤマ）発注 -- 早期必要</li>
       <li>保健所検査 → 厚生局8/1指定</li>
     </ul>
-  </div>
-</div>
-
-<!-- Task list table -->
-<div class="task-list-section">
-  <div class="task-list-header">
-    <h2>タスク一覧</h2>
-    <div class="task-filters">
-      <span class="filter-label">カテゴリ:</span>
-      <button class="task-filter-btn active" data-cat="all" onclick="setCatFilter('all')">すべて</button>
-      <button class="task-filter-btn" data-cat="契約" onclick="setCatFilter('契約')">契約</button>
-      <button class="task-filter-btn" data-cat="内装" onclick="setCatFilter('内装')">内装</button>
-      <button class="task-filter-btn" data-cat="設備" onclick="setCatFilter('設備')">設備</button>
-      <button class="task-filter-btn" data-cat="許認可" onclick="setCatFilter('許認可')">許認可</button>
-      <button class="task-filter-btn" data-cat="採用" onclick="setCatFilter('採用')">採用</button>
-      <button class="task-filter-btn" data-cat="オープン準備" onclick="setCatFilter('オープン準備')">オープン準備</button>
-      <label class="toggle-label">
-        <input type="checkbox" id="incompleteToggle" onchange="renderTaskTable()">
-        未完了のみ
-      </label>
-    </div>
-  </div>
-  <div class="task-table-wrapper">
-    <table class="task-table" id="taskTable">
-      <thead>
-        <tr>
-          <th style="width:90px">ステータス</th>
-          <th>タスク名</th>
-          <th style="width:90px">カテゴリ</th>
-          <th style="width:60px">店舗</th>
-          <th style="width:90px">担当者</th>
-          <th style="width:70px">開始週</th>
-          <th style="width:70px">終了週</th>
-          <th>備考</th>
-        </tr>
-      </thead>
-      <tbody id="taskTableBody"></tbody>
-    </table>
   </div>
 </div>
 
@@ -555,22 +524,35 @@ firebase.initializeApp({
   messagingSenderId: "301306058235",
   appId: "1:301306058235:web:a0ac26ca035c2cf22ce75e"
 });
-const auth = firebase.auth(), db = firebase.firestore();
+var auth = firebase.auth(), db = firebase.firestore();
 
 // ============================================================
 // State
 // ============================================================
-let currentUser = null, userRole = 'viewer', canEdit = false;
-let tasks = [];
-let currentFilter = 'all';
-let currentCatFilter = 'all';
-let saveTimer = null;
-let highlightedTaskId = null;
+var currentUser = null, userRole = 'viewer', canEdit = false;
+var tasks = [];
+var currentFilter = 'all';
+var currentCatFilter = 'all';
+var saveTimer = null;
+// Track collapsed state per category key (e.g. "k-契約")
+var collapsedCategories = {};
+
+// ============================================================
+// Category labels with 社内/業者 tags
+// ============================================================
+var CATEGORY_TAGS = {
+  '契約': '社内',
+  '内装': '業者',
+  '設備': '業者',
+  '許認可': '社内',
+  '採用': '社内',
+  'オープン準備': '社内'
+};
 
 // ============================================================
 // Week definitions
 // ============================================================
-const WEEKS = [
+var WEEKS = [
   { month: '4月', weeks: ['W4'] },
   { month: '5月', weeks: ['W1','W2','W3','W4'] },
   { month: '6月', weeks: ['W1','W2','W3','W4'] },
@@ -578,8 +560,10 @@ const WEEKS = [
   { month: '8月', weeks: ['W1','W2','W3','W4'] },
 ];
 
-const WEEK_LABELS = [];
+var WEEK_LABELS = [];
 WEEKS.forEach(function(m) { m.weeks.forEach(function(w) { WEEK_LABELS.push(m.month + w); }); });
+
+var totalWeekCount = WEEK_LABELS.length;
 
 var STATUS_MAP = {
   '': { label: '未着手', cls: 'todo' },
@@ -619,9 +603,9 @@ function getDefaultTasks() {
     t('内装施工','渋谷内装','k','内装',3,7,'todo'),
     t('消防確認','渋谷内装','k','内装',6,7,'todo'),
     // 越谷 設備
-    t('レセコン見積・発注（ファーミー）','取締役C/管理部A','k','設備',0,2,'critical'),
+    t('レセコン見積・発注（モイネット（ファーミー））','取締役C/管理部A','k','設備',0,2,'critical'),
     t('調剤機器見積・発注（ユヤマ）','根木','k','設備',0,2,'critical'),
-    t('レセコン納品・設置','ファーミー','k','設備',6,8,'todo'),
+    t('レセコン納品・設置','モイネット（ファーミー）','k','設備',6,8,'todo'),
     t('調剤機器納品・設置','ユヤマ','k','設備',7,8,'todo'),
     t('Musubi・オン資セットアップ','管理部A','k','設備',8,9,'todo'),
     // 越谷 許認可
@@ -646,9 +630,9 @@ function getDefaultTasks() {
     t('内装施工（スケルトン）','渋谷内装','c','内装',4,10,'todo'),
     t('消防確認','渋谷内装','c','内装',9,10,'todo'),
     // 清瀬 設備
-    t('レセコン見積・発注（ファーミー）','取締役C/管理部A','c','設備',1,3,'critical'),
+    t('レセコン見積・発注（モイネット（ファーミー））','取締役C/管理部A','c','設備',1,3,'critical'),
     t('調剤機器見積・発注（ユヤマ）','根木','c','設備',1,3,'critical'),
-    t('レセコン納品・設置','ファーミー','c','設備',10,12,'todo'),
+    t('レセコン納品・設置','モイネット（ファーミー）','c','設備',10,12,'todo'),
     t('調剤機器納品・設置','ユヤマ','c','設備',11,12,'todo'),
     t('Musubi・オン資セットアップ','管理部A','c','設備',12,13,'todo'),
     // 清瀬 許認可
@@ -719,7 +703,6 @@ async function loadTasks() {
     if (doc.exists && doc.data().tasks && doc.data().tasks.length > 0) {
       tasks = doc.data().tasks;
     } else {
-      // First time: seed default data
       tasks = getDefaultTasks();
       await saveTasks(true);
     }
@@ -763,17 +746,35 @@ function showSaveIndicator(state) {
 }
 
 // ============================================================
-// Grouped tasks for gantt
+// Grouped tasks
 // ============================================================
 function getGroupedTasks() {
   var groups = [];
   var stores = currentFilter === 'all' ? ['k','c'] : [currentFilter];
+  var incompleteOnly = document.getElementById('incompleteToggle').checked;
   stores.forEach(function(store) {
     var storeName = store === 'k' ? '越谷' : '清瀬';
     CATEGORY_ORDER.forEach(function(cat) {
+      // Apply category filter
+      if (currentCatFilter !== 'all' && cat !== currentCatFilter) return;
       var catTasks = tasks.filter(function(t) { return t.store === store && t.category === cat; });
       if (catTasks.length > 0) {
-        groups.push({ cat: storeName + '｜' + cat, store: store, tasks: catTasks });
+        var filteredTasks = catTasks;
+        if (incompleteOnly) {
+          filteredTasks = catTasks.filter(function(t) { return t.status !== 'done' && t.status !== 'milestone'; });
+        }
+        // Always show category row; show filtered tasks inside
+        var tag = CATEGORY_TAGS[cat] || '';
+        var doneCount = catTasks.filter(function(t) { return t.status === 'done'; }).length;
+        var nonMilestone = catTasks.filter(function(t) { return t.status !== 'milestone'; }).length;
+        groups.push({
+          catLabel: storeName + '｜' + cat + '【' + tag + '】',
+          catKey: store + '-' + cat,
+          store: store,
+          doneCount: doneCount,
+          totalCount: nonMilestone,
+          tasks: filteredTasks
+        });
       }
     });
   });
@@ -781,24 +782,40 @@ function getGroupedTasks() {
 }
 
 // ============================================================
-// Render gantt chart
+// Toggle category collapse
+// ============================================================
+function toggleCategory(catKey) {
+  collapsedCategories[catKey] = !collapsedCategories[catKey];
+  renderGantt();
+}
+
+// ============================================================
+// Render integrated gantt chart with accordion
 // ============================================================
 function renderGantt() {
   var table = document.getElementById('ganttTable');
-  var totalWeeks = 0;
-  WEEKS.forEach(function(m) { totalWeeks += m.weeks.length; });
 
   var now = new Date();
   var apr21 = new Date(2026, 3, 20);
   var todayWeek = Math.floor((now - apr21) / (7 * 86400000));
 
-  var monthRow = '<tr class="month-header"><th style="min-width:220px">タスク</th><th style="min-width:70px">担当</th>';
+  // Column count: taskName + who + status + note + weeks
+  var fixedCols = 4;
+  var totalCols = fixedCols + totalWeekCount;
+
+  // Month header row
+  var monthRow = '<tr class="month-header">';
+  monthRow += '<th style="min-width:200px">タスク名</th>';
+  monthRow += '<th style="min-width:80px">担当</th>';
+  monthRow += '<th style="min-width:90px">ステータス</th>';
+  monthRow += '<th style="min-width:120px">備考</th>';
   WEEKS.forEach(function(m) {
     monthRow += '<th colspan="' + m.weeks.length + '">' + m.month + '</th>';
   });
   monthRow += '</tr>';
 
-  var weekRow = '<tr class="week-header"><th></th><th></th>';
+  // Week header row
+  var weekRow = '<tr class="week-header"><th></th><th></th><th></th><th></th>';
   var weekIdx = 0;
   WEEKS.forEach(function(m) {
     m.weeks.forEach(function(w) {
@@ -815,109 +832,79 @@ function renderGantt() {
   groups.forEach(function(group) {
     var isK = group.store === 'k';
     var catClass = isK ? 'koshigaya' : 'kiyose';
-    body += '<tr class="category-row ' + catClass + '"><td colspan="' + (totalWeeks + 2) + '">' + group.cat + '</td></tr>';
+    var isCollapsed = !!collapsedCategories[group.catKey];
+    var toggleIcon = isCollapsed ? '&#9654;' : '&#9660;';
+    var progressText = '(' + group.doneCount + '/' + group.totalCount + '完了)';
 
-    group.tasks.forEach(function(task) {
-      var storeClass = task.store === 'k' ? 'koshigaya' : 'kiyose';
-      var statusClass = storeClass;
-      if (task.status === 'done') statusClass = 'done';
-      if (task.status === 'critical') statusClass = 'critical';
-      if (task.status === 'warning') statusClass = 'warning';
+    body += '<tr class="category-row ' + catClass + '" onclick="toggleCategory(\'' + group.catKey + '\')">';
+    body += '<td colspan="' + totalCols + '">';
+    body += '<span class="cat-toggle">' + toggleIcon + '</span>';
+    body += escapeHtml(group.catLabel);
+    body += '<span class="cat-progress">' + progressText + '</span>';
+    body += '</td></tr>';
 
-      body += '<tr class="task-row clickable" data-task-id="' + task.id + '" onclick="highlightTask(\'' + task.id + '\')">';
-      body += '<td>' + task.name + '</td><td>' + (task.who || '') + '</td>';
+    if (!isCollapsed) {
+      group.tasks.forEach(function(task) {
+        var storeClass = task.store === 'k' ? 'koshigaya' : 'kiyose';
+        var statusClass = storeClass;
+        if (task.status === 'done') statusClass = 'done';
+        if (task.status === 'critical') statusClass = 'critical';
+        if (task.status === 'warning') statusClass = 'warning';
 
-      var wi = 0;
-      WEEKS.forEach(function(m) {
-        m.weeks.forEach(function(w) {
-          var cls = wi === todayWeek ? ' today' : '';
-          if (task.status === 'milestone' && wi === task.startWeek) {
-            body += '<td class="bar-cell' + cls + '"><div class="milestone ' + statusClass + '"></div></td>';
-          } else if (wi >= task.startWeek && wi <= task.endWeek) {
-            var barStyle = '';
-            if (wi === task.startWeek) barStyle += 'border-radius: 3px 0 0 3px;';
-            if (wi === task.endWeek) barStyle += 'border-radius: 0 3px 3px 0;';
-            if (wi === task.startWeek && wi === task.endWeek) barStyle = 'border-radius: 3px;';
-            body += '<td class="bar-cell' + cls + '"><div class="bar ' + statusClass + '" style="' + barStyle + '"></div></td>';
-          } else {
-            body += '<td class="' + cls + '"></td>';
-          }
-          wi++;
+        var st = STATUS_MAP[task.status] || STATUS_MAP['todo'];
+        var disabled = !canEdit ? ' disabled' : '';
+
+        body += '<tr class="task-row" data-task-id="' + task.id + '">';
+
+        // Task name
+        body += '<td class="td-name">' + escapeHtml(task.name) + '</td>';
+
+        // Who
+        body += '<td class="td-who">' + escapeHtml(task.who || '-') + '</td>';
+
+        // Status dropdown
+        body += '<td class="td-status">';
+        body += '<select class="status-select st-' + st.cls + '" onchange="onStatusChange(\'' + task.id + '\', this.value)"' + disabled + '>';
+        body += '<option value="todo"' + (task.status === 'todo' || task.status === '' ? ' selected' : '') + '>未着手</option>';
+        body += '<option value="progress"' + (task.status === 'progress' ? ' selected' : '') + '>進行中</option>';
+        body += '<option value="done"' + (task.status === 'done' ? ' selected' : '') + '>完了</option>';
+        body += '<option value="critical"' + (task.status === 'critical' ? ' selected' : '') + '>クリティカル</option>';
+        body += '<option value="warning"' + (task.status === 'warning' ? ' selected' : '') + '>要注意</option>';
+        if (task.status === 'milestone') {
+          body += '<option value="milestone" selected>マイルストーン</option>';
+        }
+        body += '</select></td>';
+
+        // Note input
+        body += '<td class="td-note"><input type="text" class="note-input" value="' + escapeHtml(task.note || '') + '" ' +
+          'onchange="onNoteChange(\'' + task.id + '\', this.value)" ' +
+          'placeholder="メモ..."' + (canEdit ? '' : ' readonly') + '></td>';
+
+        // Gantt bars
+        var wi = 0;
+        WEEKS.forEach(function(m) {
+          m.weeks.forEach(function(w) {
+            var cls = wi === todayWeek ? ' today' : '';
+            if (task.status === 'milestone' && wi === task.startWeek) {
+              body += '<td class="bar-cell' + cls + '"><div class="milestone ' + statusClass + '"></div></td>';
+            } else if (wi >= task.startWeek && wi <= task.endWeek) {
+              var barStyle = '';
+              if (wi === task.startWeek) barStyle += 'border-radius: 3px 0 0 3px;';
+              if (wi === task.endWeek) barStyle += 'border-radius: 0 3px 3px 0;';
+              if (wi === task.startWeek && wi === task.endWeek) barStyle = 'border-radius: 3px;';
+              body += '<td class="bar-cell' + cls + '"><div class="bar ' + statusClass + '" style="' + barStyle + '"></div></td>';
+            } else {
+              body += '<td class="' + cls + '"></td>';
+            }
+            wi++;
+          });
         });
+        body += '</tr>';
       });
-      body += '</tr>';
-    });
+    }
   });
 
   table.innerHTML = monthRow + weekRow + body;
-}
-
-// ============================================================
-// Render task table
-// ============================================================
-function renderTaskTable() {
-  var tbody = document.getElementById('taskTableBody');
-  var incompleteOnly = document.getElementById('incompleteToggle').checked;
-
-  var filtered = tasks.filter(function(t) {
-    if (currentFilter !== 'all' && t.store !== currentFilter) return false;
-    if (currentCatFilter !== 'all' && t.category !== currentCatFilter) return false;
-    if (incompleteOnly && (t.status === 'done' || t.status === 'milestone')) return false;
-    return true;
-  });
-
-  // Sort by store then category order then startWeek
-  filtered.sort(function(a, b) {
-    if (a.store !== b.store) return a.store === 'k' ? -1 : 1;
-    var ai = CATEGORY_ORDER.indexOf(a.category);
-    var bi = CATEGORY_ORDER.indexOf(b.category);
-    if (ai !== bi) return ai - bi;
-    return a.startWeek - b.startWeek;
-  });
-
-  var html = '';
-  filtered.forEach(function(task) {
-    var st = STATUS_MAP[task.status] || STATUS_MAP['todo'];
-    var isHighlighted = task.id === highlightedTaskId ? ' highlighted' : '';
-    var disabled = !canEdit ? ' disabled' : '';
-
-    html += '<tr data-store="' + task.store + '" data-task-id="' + task.id + '" class="' + isHighlighted + '">';
-
-    // Status dropdown
-    html += '<td>';
-    html += '<select class="status-select st-' + st.cls + '" onchange="onStatusChange(\'' + task.id + '\', this.value)"' + disabled + '>';
-    html += '<option value="todo"' + (task.status === 'todo' || task.status === '' ? ' selected' : '') + '>未着手</option>';
-    html += '<option value="progress"' + (task.status === 'progress' ? ' selected' : '') + '>進行中</option>';
-    html += '<option value="done"' + (task.status === 'done' ? ' selected' : '') + '>完了</option>';
-    html += '<option value="critical"' + (task.status === 'critical' ? ' selected' : '') + '>クリティカル</option>';
-    html += '<option value="warning"' + (task.status === 'warning' ? ' selected' : '') + '>要注意</option>';
-    if (task.status === 'milestone') {
-      html += '<option value="milestone" selected>マイルストーン</option>';
-    }
-    html += '</select>';
-    html += '</td>';
-
-    // Task name
-    html += '<td>' + escapeHtml(task.name) + '</td>';
-    // Category
-    html += '<td>' + task.category + '</td>';
-    // Store
-    html += '<td class="store-cell">' + STORE_LABELS[task.store] + '</td>';
-    // Who
-    html += '<td>' + escapeHtml(task.who || '-') + '</td>';
-    // Start week
-    html += '<td class="week-label">' + (WEEK_LABELS[task.startWeek] || task.startWeek) + '</td>';
-    // End week
-    html += '<td class="week-label">' + (WEEK_LABELS[task.endWeek] || task.endWeek) + '</td>';
-    // Note
-    html += '<td><input type="text" class="note-input" value="' + escapeHtml(task.note || '') + '" ' +
-      'onchange="onNoteChange(\'' + task.id + '\', this.value)" ' +
-      'placeholder="メモを入力..."' + (canEdit ? '' : ' readonly') + '></td>';
-
-    html += '</tr>';
-  });
-
-  tbody.innerHTML = html;
 }
 
 // ============================================================
@@ -932,7 +919,6 @@ function renderSummary() {
     if (el) el.textContent = doneCount + ' / ' + total + ' 完了';
   });
 
-  // Show/hide summary cards based on filter
   var kCard = document.getElementById('summary-k');
   var cCard = document.getElementById('summary-c');
   var summaryDiv = document.getElementById('summarySection');
@@ -948,7 +934,6 @@ function renderSummary() {
 // ============================================================
 function renderAll() {
   renderGantt();
-  renderTaskTable();
   renderSummary();
   document.getElementById('updatedAt').textContent = '最終更新: ' + new Date().toLocaleString('ja-JP');
 }
@@ -969,23 +954,14 @@ function setCatFilter(cat) {
   document.querySelectorAll('.task-filter-btn').forEach(function(btn) {
     btn.classList.toggle('active', btn.dataset.cat === cat);
   });
-  renderTaskTable();
+  renderAll();
 }
 
 function onStatusChange(taskId, value) {
   var task = tasks.find(function(t) { return t.id === taskId; });
   if (!task || !canEdit) return;
   task.status = value;
-  renderGantt();
-  renderSummary();
-  // Re-style the select that changed
-  var row = document.querySelector('#taskTableBody tr[data-task-id="' + taskId + '"]');
-  if (row) {
-    var sel = row.querySelector('.status-select');
-    if (sel) {
-      sel.className = 'status-select st-' + (STATUS_MAP[value] || STATUS_MAP['todo']).cls;
-    }
-  }
+  renderAll();
   debounceSave();
 }
 
@@ -994,18 +970,6 @@ function onNoteChange(taskId, value) {
   if (!task || !canEdit) return;
   task.note = value;
   debounceSave();
-}
-
-function highlightTask(taskId) {
-  highlightedTaskId = taskId;
-  // Remove old highlights
-  document.querySelectorAll('#taskTableBody tr.highlighted').forEach(function(r) { r.classList.remove('highlighted'); });
-  // Add new highlight
-  var row = document.querySelector('#taskTableBody tr[data-task-id="' + taskId + '"]');
-  if (row) {
-    row.classList.add('highlighted');
-    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
 }
 
 function escapeHtml(str) {
