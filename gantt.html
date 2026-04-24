@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>外来プロジェクト 開局スケジュール</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📅</text></svg>">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
   :root {
     --primary: #1a73e8;
@@ -16,194 +20,58 @@
     --surface: #ffffff;
     --text: #202124;
     --border: #dadce0;
+    --text-secondary: #5f6368;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Segoe UI', 'Meiryo', sans-serif; background: var(--bg); color: var(--text); }
 
-  .nav-bar {
-    display: flex;
-    gap: 0;
-    background: #1a73e8;
-    padding: 0 24px;
+  /* Login */
+  #login-screen {
+    display: flex; align-items: center; justify-content: center; min-height: 100vh;
+    background: linear-gradient(135deg, #e8f0fe, #f8f9fa, #ceead6);
   }
-  .nav-link {
-    padding: 10px 20px;
-    color: rgba(255,255,255,0.8);
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    transition: all 0.2s;
+  .login-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 48px; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 420px; width: 90%;
   }
-  .nav-link:hover {
-    color: #fff;
-    background: rgba(255,255,255,0.1);
+  .login-card h1 { font-size: 1.4rem; margin-bottom: 8px; color: var(--primary); }
+  .login-card p { color: var(--text-secondary); margin-bottom: 32px; font-size: 0.9rem; }
+  .login-btn {
+    display: inline-flex; align-items: center; gap: 10px; padding: 12px 32px;
+    background: var(--primary); color: #fff; border: none; border-radius: 8px;
+    font-size: 1rem; cursor: pointer; transition: all 0.2s;
   }
-  .nav-link.active {
-    color: #fff;
-    background: rgba(255,255,255,0.2);
-    border-bottom: 2px solid #fff;
-  }
+  .login-btn:hover { opacity: 0.9; transform: translateY(-1px); }
+  .login-btn svg { width: 20px; height: 20px; }
+
+  #main-app { display: none; }
 
   .header {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 16px 24px;
+    padding: 12px 24px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 16px;
-  }
-  .header h1 { font-size: 20px; font-weight: 500; }
-  .header .subtitle { color: #5f6368; font-size: 14px; }
-
-  .legend {
-    display: flex;
-    gap: 16px;
-    padding: 12px 24px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    font-size: 13px;
     flex-wrap: wrap;
   }
-  .legend-item { display: flex; align-items: center; gap: 6px; }
-  .legend-dot {
-    width: 12px; height: 12px; border-radius: 3px;
+  .header-left { display: flex; align-items: center; gap: 12px; }
+  .header h1 { font-size: 20px; font-weight: 500; }
+  .header .subtitle { color: var(--text-secondary); font-size: 14px; }
+  .header-right { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+  .user-info { display: flex; align-items: center; gap: 6px; color: var(--text-secondary); }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--primary); }
+  .role-badge {
+    background: var(--primary); color: #fff; padding: 2px 8px;
+    border-radius: 10px; font-size: 0.65rem; font-weight: 600;
   }
-
-  .container { padding: 16px 24px; overflow-x: auto; }
-
-  .gantt-wrapper {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    overflow: hidden;
+  .btn-sm {
+    padding: 6px 14px; background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-secondary); border-radius: 8px; font-size: 0.8rem; cursor: pointer;
+    text-decoration: none; transition: all 0.2s;
   }
-
-  .gantt-table {
-    width: 100%;
-    min-width: 1200px;
-    border-collapse: collapse;
-  }
-
-  .gantt-table th, .gantt-table td {
-    border: 1px solid var(--border);
-    padding: 0;
-    text-align: center;
-    font-size: 12px;
-  }
-
-  /* Header rows */
-  .month-header th {
-    background: #e8eaed;
-    padding: 6px 4px;
-    font-weight: 600;
-    font-size: 13px;
-  }
-  .week-header th {
-    background: #f1f3f4;
-    padding: 4px 2px;
-    font-weight: 400;
-    font-size: 11px;
-    color: #5f6368;
-  }
-
-  /* Today marker */
-  .today { background: #fff3e0 !important; }
-
-  /* Category header */
-  .category-row td {
-    background: #e8f0fe;
-    padding: 6px 12px;
-    font-weight: 600;
-    text-align: left;
-    font-size: 13px;
-    color: var(--primary);
-  }
-  .category-row.koshigaya td { background: #d2e3fc; color: #1967d2; }
-  .category-row.kiyose td { background: #ceead6; color: #137333; }
-
-  /* Task rows */
-  .task-row td {
-    padding: 0;
-    height: 28px;
-  }
-  .task-row td:first-child {
-    text-align: left;
-    padding: 4px 8px 4px 20px;
-    white-space: nowrap;
-    font-size: 12px;
-    min-width: 220px;
-    background: var(--surface);
-  }
-  .task-row td:nth-child(2) {
-    min-width: 70px;
-    font-size: 11px;
-    color: #5f6368;
-    background: var(--surface);
-  }
-
-  /* Bar cells */
-  .bar-cell { position: relative; }
-  .bar {
-    position: absolute;
-    top: 4px;
-    bottom: 4px;
-    border-radius: 3px;
-    left: 2px;
-    right: 2px;
-  }
-  .bar.koshigaya { background: var(--koshigaya); opacity: 0.7; }
-  .bar.kiyose { background: var(--kiyose); opacity: 0.7; }
-  .bar.critical { background: var(--critical); opacity: 0.7; }
-  .bar.done { background: var(--done); opacity: 0.7; }
-  .bar.warning { background: var(--warning); opacity: 0.7; }
-
-  /* Milestone */
-  .milestone {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%) rotate(45deg);
-    width: 10px;
-    height: 10px;
-    border-radius: 2px;
-  }
-  .milestone.koshigaya { background: var(--koshigaya); }
-  .milestone.kiyose { background: var(--kiyose); }
-  .milestone.critical { background: var(--critical); }
-
-  /* Summary section */
-  .summary {
-    padding: 16px 24px;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-    margin-top: 16px;
-  }
-  .summary-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 16px;
-  }
-  .summary-card h3 {
-    font-size: 14px;
-    font-weight: 600;
-    margin-bottom: 12px;
-    padding-bottom: 8px;
-    border-bottom: 2px solid;
-  }
-  .summary-card.koshigaya h3 { border-color: var(--koshigaya); }
-  .summary-card.kiyose h3 { border-color: var(--kiyose); }
-  .summary-card ul {
-    list-style: none;
-    font-size: 13px;
-    line-height: 1.8;
-  }
-  .summary-card li::before { content: '• '; color: #5f6368; }
-  .summary-card li.done::before { content: '✅ '; }
-  .summary-card li.progress::before { content: '🔄 '; }
-  .summary-card li.upcoming::before { content: '⏳ '; }
-  .summary-card li.critical::before { content: '🔴 '; }
+  .btn-sm:hover { background: #f1f3f4; color: var(--text); }
 
   .filter-bar {
     display: flex;
@@ -222,7 +90,7 @@
   }
   .filter-label {
     font-size: 13px;
-    color: #5f6368;
+    color: var(--text-secondary);
     font-weight: 500;
     margin-right: 4px;
   }
@@ -230,7 +98,7 @@
     padding: 6px 16px;
     border: 1px solid var(--border);
     background: var(--surface);
-    color: #5f6368;
+    color: var(--text-secondary);
     border-radius: 20px;
     font-size: 13px;
     cursor: pointer;
@@ -258,26 +126,316 @@
     gap: 14px;
     font-size: 12px;
   }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 12px; height: 12px; border-radius: 3px; }
+
+  .container { padding: 16px 24px; overflow-x: auto; }
+
+  .gantt-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .gantt-table {
+    width: 100%;
+    min-width: 1200px;
+    border-collapse: collapse;
+  }
+
+  .gantt-table th, .gantt-table td {
+    border: 1px solid var(--border);
+    padding: 0;
+    text-align: center;
+    font-size: 12px;
+  }
+
+  .month-header th {
+    background: #e8eaed;
+    padding: 6px 4px;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .week-header th {
+    background: #f1f3f4;
+    padding: 4px 2px;
+    font-weight: 400;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .today { background: #fff3e0 !important; }
+
+  .category-row td {
+    background: #e8f0fe;
+    padding: 6px 12px;
+    font-weight: 600;
+    text-align: left;
+    font-size: 13px;
+    color: var(--primary);
+  }
+  .category-row.koshigaya td { background: #d2e3fc; color: #1967d2; }
+  .category-row.kiyose td { background: #ceead6; color: #137333; }
+
+  .task-row td {
+    padding: 0;
+    height: 28px;
+  }
+  .task-row td:first-child {
+    text-align: left;
+    padding: 4px 8px 4px 20px;
+    white-space: nowrap;
+    font-size: 12px;
+    min-width: 220px;
+    background: var(--surface);
+  }
+  .task-row td:nth-child(2) {
+    min-width: 70px;
+    font-size: 11px;
+    color: var(--text-secondary);
+    background: var(--surface);
+  }
+  .task-row.clickable { cursor: pointer; }
+  .task-row.clickable:hover td:first-child,
+  .task-row.clickable:hover td:nth-child(2) {
+    background: #e8f0fe;
+  }
+
+  .bar-cell { position: relative; }
+  .bar {
+    position: absolute;
+    top: 4px;
+    bottom: 4px;
+    border-radius: 3px;
+    left: 2px;
+    right: 2px;
+  }
+  .bar.koshigaya { background: var(--koshigaya); opacity: 0.7; }
+  .bar.kiyose { background: var(--kiyose); opacity: 0.7; }
+  .bar.critical { background: var(--critical); opacity: 0.7; }
+  .bar.done { background: var(--done); opacity: 0.7; }
+  .bar.warning { background: var(--warning); opacity: 0.7; }
+
+  .milestone {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(45deg);
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+  .milestone.koshigaya { background: var(--koshigaya); }
+  .milestone.kiyose { background: var(--kiyose); }
+  .milestone.critical { background: var(--critical); }
+
+  /* Summary section */
+  .summary {
+    padding: 16px 24px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .summary-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .summary-card h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .summary-card.koshigaya h3 { border-color: var(--koshigaya); }
+  .summary-card.kiyose h3 { border-color: var(--kiyose); }
+  .summary-card ul {
+    list-style: none;
+    font-size: 13px;
+    line-height: 1.8;
+  }
+  .progress-text { font-size: 12px; color: var(--text-secondary); font-weight: 400; }
+
+  /* Task list table */
+  .task-list-section {
+    padding: 0 24px 24px;
+  }
+  .task-list-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .task-list-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .task-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .task-filter-btn {
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    border-radius: 16px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .task-filter-btn:hover { background: #f1f3f4; }
+  .task-filter-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .toggle-label {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-secondary); cursor: pointer;
+    margin-left: 8px;
+  }
+  .toggle-label input { cursor: pointer; }
+
+  .task-table-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+  .task-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    min-width: 900px;
+  }
+  .task-table th {
+    background: #e8eaed;
+    padding: 8px 10px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--text);
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .task-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f1f3f4;
+    vertical-align: middle;
+  }
+  .task-table tbody tr:hover { background: #f8f9fa; }
+  .task-table tbody tr.highlighted { background: #e8f0fe; }
+  .task-table tbody tr[data-store="k"] td.store-cell { color: #1967d2; font-weight: 500; }
+  .task-table tbody tr[data-store="c"] td.store-cell { color: #137333; font-weight: 500; }
+
+  .status-select {
+    padding: 3px 6px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    font-size: 11px;
+    cursor: pointer;
+    background: var(--surface);
+    min-width: 80px;
+  }
+  .status-select.st-todo { border-color: #bbb; color: #666; }
+  .status-select.st-progress { border-color: var(--koshigaya); color: var(--koshigaya); background: #e8f0fe; }
+  .status-select.st-done { border-color: var(--done); color: var(--done); background: #e6f4ea; }
+  .status-select.st-critical { border-color: var(--critical); color: var(--critical); background: #fce8e6; }
+  .status-select.st-warning { border-color: #e37400; color: #e37400; background: #fef7e0; }
+  .status-select.st-milestone { border-color: #9c27b0; color: #9c27b0; background: #f3e5f5; }
+
+  .note-input {
+    padding: 3px 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: 11px;
+    width: 100%;
+    min-width: 120px;
+    background: transparent;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .note-input:hover { border-color: var(--border); }
+  .note-input:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+  .save-indicator {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 500;
+    z-index: 1000;
+    transition: opacity 0.3s;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .save-indicator.saving { opacity: 1; background: #e8f0fe; color: var(--primary); }
+  .save-indicator.saved { opacity: 1; background: #e6f4ea; color: var(--done); }
+  .save-indicator.error { opacity: 1; background: #fce8e6; color: var(--critical); }
 
   .updated {
     text-align: right;
     padding: 8px 24px;
     font-size: 11px;
-    color: #5f6368;
+    color: var(--text-secondary);
+  }
+
+  .week-label { font-size: 11px; color: var(--text-secondary); }
+
+  @media(max-width:768px){
+    .summary { grid-template-columns: 1fr; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .filter-bar { flex-direction: column; align-items: flex-start; }
   }
 </style>
 </head>
 <body>
 
-<nav class="nav-bar">
-  <a href="./" class="nav-link">📊 ダッシュボード</a>
-  <a href="gantt.html" class="nav-link active">📅 ガントチャート</a>
-  <a href="seed.html" class="nav-link">📥 データ投入</a>
-</nav>
+<!-- Login screen -->
+<div id="login-screen">
+  <div class="login-card">
+    <h1>開局スケジュール</h1>
+    <p>WISE Inc. - 外来プロジェクト タスク管理</p>
+    <button class="login-btn" onclick="doLogin()">
+      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+      Googleでログイン
+    </button>
+  </div>
+</div>
+
+<!-- Main app -->
+<div id="main-app">
 
 <div class="header">
-  <h1>外来プロジェクト 開局スケジュール</h1>
-  <span class="subtitle">越谷（7月） / 清瀬（8月）</span>
+  <div class="header-left">
+    <h1>外来プロジェクト 開局スケジュール</h1>
+    <span class="subtitle">越谷（7月） / 清瀬（8月）</span>
+  </div>
+  <div class="header-right">
+    <div class="user-info">
+      <img id="user-avatar" class="user-avatar" src="" alt="">
+      <span id="user-name"></span>
+      <span id="role-badge" class="role-badge"></span>
+    </div>
+    <a href="index.html" class="btn-sm">収益シミュレーション</a>
+    <button class="btn-sm" onclick="doLogout()">ログアウト</button>
+  </div>
 </div>
 
 <div class="filter-bar">
@@ -303,115 +461,115 @@
 </div>
 </div>
 
-<div class="summary">
-  <div class="summary-card koshigaya">
-    <h3>越谷（南越谷）— 7月オープン</h3>
-    <ul>
-      <li class="done">テナント1番手確保・仲介料500万に減額合意</li>
-      <li class="done">内見実施（中はきれい・そのまま使えるレベル）</li>
-      <li class="done">渋谷内装に図面起こし依頼</li>
-      <li class="done">越谷市役所で自立支援・トイレ確認済み</li>
-      <li class="done">採用：JS-139046（管理薬剤師候補）面接依頼済み</li>
-      <li class="progress">テナント契約（5/1予定）</li>
-      <li class="upcoming">内装 現地打ち合わせ（日程調整中）</li>
-      <li class="critical">レセコン（ファーミー）・調剤機器（ユヤマ）発注 — 早期必要</li>
-      <li class="upcoming">保健所検査 → 厚生局7/1指定</li>
+<!-- Summary cards -->
+<div class="summary" id="summarySection">
+  <div class="summary-card koshigaya" id="summary-k">
+    <h3>
+      <span>越谷（南越谷）-- 7月オープン</span>
+      <span class="progress-text" id="progress-k"></span>
+    </h3>
+    <ul id="summary-k-list">
+      <li>テナント1番手確保・仲介料500万に減額合意</li>
+      <li>内見実施（中はきれい・そのまま使えるレベル）</li>
+      <li>渋谷内装に図面起こし依頼</li>
+      <li>越谷市役所で自立支援・トイレ確認済み</li>
+      <li>採用：JS-139046（管理薬剤師候補）面接依頼済み</li>
+      <li>テナント契約（5/1予定）</li>
+      <li>内装 現地打ち合わせ（日程調整中）</li>
+      <li>レセコン（ファーミー）・調剤機器（ユヤマ）発注 -- 早期必要</li>
+      <li>保健所検査 → 厚生局7/1指定</li>
     </ul>
   </div>
-  <div class="summary-card kiyose">
-    <h3>清瀬 — 8月オープン</h3>
-    <ul>
-      <li class="done">テナント申し込み1番手確保</li>
-      <li class="done">事業性分析レポート作成</li>
-      <li class="done">内装 現地打ち合わせ済み（4/23）</li>
-      <li class="progress">保証審査中（ACRE長屋より書類提出済み）</li>
-      <li class="done">採用：JS-139109（リーダー候補）面接依頼済み</li>
-      <li class="upcoming">テナント契約</li>
-      <li class="upcoming">内装図面・見積確定</li>
-      <li class="critical">レセコン（ファーミー）・調剤機器（ユヤマ）発注 — 早期必要</li>
-      <li class="upcoming">保健所検査 → 厚生局8/1指定</li>
+  <div class="summary-card kiyose" id="summary-c">
+    <h3>
+      <span>清瀬 -- 8月オープン</span>
+      <span class="progress-text" id="progress-c"></span>
+    </h3>
+    <ul id="summary-c-list">
+      <li>テナント申し込み1番手確保</li>
+      <li>事業性分析レポート作成</li>
+      <li>内装 現地打ち合わせ済み（4/23）</li>
+      <li>保証審査中（ACRE長屋より書類提出済み）</li>
+      <li>採用：JS-139109（リーダー候補）面接依頼済み</li>
+      <li>テナント契約</li>
+      <li>内装図面・見積確定</li>
+      <li>レセコン（ファーミー）・調剤機器（ユヤマ）発注 -- 早期必要</li>
+      <li>保健所検査 → 厚生局8/1指定</li>
     </ul>
+  </div>
+</div>
+
+<!-- Task list table -->
+<div class="task-list-section">
+  <div class="task-list-header">
+    <h2>タスク一覧</h2>
+    <div class="task-filters">
+      <span class="filter-label">カテゴリ:</span>
+      <button class="task-filter-btn active" data-cat="all" onclick="setCatFilter('all')">すべて</button>
+      <button class="task-filter-btn" data-cat="契約" onclick="setCatFilter('契約')">契約</button>
+      <button class="task-filter-btn" data-cat="内装" onclick="setCatFilter('内装')">内装</button>
+      <button class="task-filter-btn" data-cat="設備" onclick="setCatFilter('設備')">設備</button>
+      <button class="task-filter-btn" data-cat="許認可" onclick="setCatFilter('許認可')">許認可</button>
+      <button class="task-filter-btn" data-cat="採用" onclick="setCatFilter('採用')">採用</button>
+      <button class="task-filter-btn" data-cat="オープン準備" onclick="setCatFilter('オープン準備')">オープン準備</button>
+      <label class="toggle-label">
+        <input type="checkbox" id="incompleteToggle" onchange="renderTaskTable()">
+        未完了のみ
+      </label>
+    </div>
+  </div>
+  <div class="task-table-wrapper">
+    <table class="task-table" id="taskTable">
+      <thead>
+        <tr>
+          <th style="width:90px">ステータス</th>
+          <th>タスク名</th>
+          <th style="width:90px">カテゴリ</th>
+          <th style="width:60px">店舗</th>
+          <th style="width:90px">担当者</th>
+          <th style="width:70px">開始週</th>
+          <th style="width:70px">終了週</th>
+          <th>備考</th>
+        </tr>
+      </thead>
+      <tbody id="taskTableBody"></tbody>
+    </table>
   </div>
 </div>
 
 <div class="updated" id="updatedAt"></div>
 
+</div><!-- /main-app -->
+
+<div class="save-indicator" id="saveIndicator"></div>
+
 <script>
-const TASKS = [
-  // category, task, assignee, store, startWeek, endWeek, status
-  // Weeks: 4/W4=0, 5/W1=1, 5/W2=2, 5/W3=3, 5/W4=4, 6/W1=5, 6/W2=6, 6/W3=7, 6/W4=8, 7/W1=9, 7/W2=10, 7/W3=11, 7/W4=12, 8/W1=13, 8/W2=14, 8/W3=15, 8/W4=16
+// ============================================================
+// Firebase init
+// ============================================================
+firebase.initializeApp({
+  apiKey: "AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",
+  authDomain: "wise-store-sim.firebaseapp.com",
+  projectId: "wise-store-sim",
+  storageBucket: "wise-store-sim.firebasestorage.app",
+  messagingSenderId: "301306058235",
+  appId: "1:301306058235:web:a0ac26ca035c2cf22ce75e"
+});
+const auth = firebase.auth(), db = firebase.firestore();
 
-  // === 越谷 ===
-  { cat: '越谷｜契約', tasks: [
-    { name: 'テナント契約締結', who: '山内/森田', s: 0, e: 1, st: 'progress', store: 'k' },
-    { name: '初期費用払込', who: '森田', s: 1, e: 2, st: '', store: 'k' },
-  ]},
-  { cat: '越谷｜内装', tasks: [
-    { name: '現地打ち合わせ', who: '渋谷内装', s: 0, e: 1, st: 'warning', store: 'k' },
-    { name: '図面確定・見積', who: '渋谷内装', s: 1, e: 3, st: '', store: 'k' },
-    { name: '内装施工', who: '渋谷内装', s: 3, e: 7, st: '', store: 'k' },
-    { name: '消防確認', who: '渋谷内装', s: 6, e: 7, st: '', store: 'k' },
-  ]},
-  { cat: '越谷｜設備', tasks: [
-    { name: 'レセコン見積・発注（ファーミー）', who: '取締役C/管理部A', s: 0, e: 2, st: 'critical', store: 'k' },
-    { name: '調剤機器見積・発注（ユヤマ）', who: '根木', s: 0, e: 2, st: 'critical', store: 'k' },
-    { name: 'レセコン納品・設置', who: 'ファーミー', s: 6, e: 8, st: '', store: 'k' },
-    { name: '調剤機器納品・設置', who: 'ユヤマ', s: 7, e: 8, st: '', store: 'k' },
-    { name: 'Musubi・オン資セットアップ', who: '管理部A', s: 8, e: 9, st: '', store: 'k' },
-  ]},
-  { cat: '越谷｜許認可', tasks: [
-    { name: '管理薬剤師確定', who: '山内', s: 0, e: 4, st: 'warning', store: 'k' },
-    { name: '保健所事前相談', who: '薬剤師B/管理部A', s: 2, e: 3, st: '', store: 'k' },
-    { name: '保健所検査', who: '薬剤師B', s: 7, e: 8, st: '', store: 'k' },
-    { name: '厚生局指定申請', who: '薬剤師B', s: 7, e: 9, st: '', store: 'k' },
-    { name: '公費申請（自立支援等）', who: '薬剤師B', s: 3, e: 8, st: '', store: 'k' },
-  ]},
-  { cat: '越谷｜採用', tasks: [
-    { name: '管理薬剤師 面接', who: '山内', s: 0, e: 2, st: 'progress', store: 'k' },
-    { name: '追加スタッフ採用', who: '薬剤師B', s: 2, e: 8, st: '', store: 'k' },
-  ]},
-  { cat: '越谷｜オープン準備', tasks: [
-    { name: '医薬品初期発注', who: '管理薬剤師', s: 8, e: 9, st: '', store: 'k' },
-    { name: '★ 越谷オープン', who: '', s: 9, e: 9, st: 'milestone', store: 'k' },
-  ]},
+// ============================================================
+// State
+// ============================================================
+let currentUser = null, userRole = 'viewer', canEdit = false;
+let tasks = [];
+let currentFilter = 'all';
+let currentCatFilter = 'all';
+let saveTimer = null;
+let highlightedTaskId = null;
 
-  // === 清瀬 ===
-  { cat: '清瀬｜契約', tasks: [
-    { name: '保証審査', who: 'ACRE長屋', s: 0, e: 2, st: 'progress', store: 'c' },
-    { name: 'テナント契約締結', who: '山内/森田', s: 2, e: 4, st: '', store: 'c' },
-    { name: '初期費用払込', who: '森田', s: 4, e: 5, st: '', store: 'c' },
-  ]},
-  { cat: '清瀬｜内装', tasks: [
-    { name: '現地打ち合わせ', who: '渋谷内装', s: 0, e: 0, st: 'done', store: 'c' },
-    { name: '図面確定・見積', who: '渋谷内装', s: 0, e: 3, st: 'progress', store: 'c' },
-    { name: '内装施工（スケルトン）', who: '渋谷内装', s: 4, e: 10, st: '', store: 'c' },
-    { name: '消防確認', who: '渋谷内装', s: 9, e: 10, st: '', store: 'c' },
-  ]},
-  { cat: '清瀬｜設備', tasks: [
-    { name: 'レセコン見積・発注（ファーミー）', who: '取締役C/管理部A', s: 1, e: 3, st: 'critical', store: 'c' },
-    { name: '調剤機器見積・発注（ユヤマ）', who: '根木', s: 1, e: 3, st: 'critical', store: 'c' },
-    { name: 'レセコン納品・設置', who: 'ファーミー', s: 10, e: 12, st: '', store: 'c' },
-    { name: '調剤機器納品・設置', who: 'ユヤマ', s: 11, e: 12, st: '', store: 'c' },
-    { name: 'Musubi・オン資セットアップ', who: '管理部A', s: 12, e: 13, st: '', store: 'c' },
-  ]},
-  { cat: '清瀬｜許認可', tasks: [
-    { name: '管理薬剤師確定', who: '山内', s: 0, e: 6, st: '', store: 'c' },
-    { name: '保健所事前相談', who: '薬剤師B/管理部A', s: 4, e: 5, st: '', store: 'c' },
-    { name: '保健所検査', who: '薬剤師B', s: 10, e: 11, st: '', store: 'c' },
-    { name: '厚生局指定申請', who: '薬剤師B', s: 11, e: 13, st: '', store: 'c' },
-    { name: '公費申請', who: '薬剤師B', s: 5, e: 12, st: '', store: 'c' },
-  ]},
-  { cat: '清瀬｜採用', tasks: [
-    { name: 'リーダー 面接', who: '山内', s: 0, e: 2, st: 'progress', store: 'c' },
-    { name: '追加スタッフ採用', who: '薬剤師B', s: 3, e: 12, st: '', store: 'c' },
-  ]},
-  { cat: '清瀬｜オープン準備', tasks: [
-    { name: 'リーダー越谷で研修', who: 'リーダー', s: 9, e: 13, st: '', store: 'c' },
-    { name: '医薬品初期発注', who: '管理薬剤師', s: 12, e: 13, st: '', store: 'c' },
-    { name: '★ 清瀬オープン', who: '', s: 13, e: 13, st: 'milestone', store: 'c' },
-  ]},
-];
-
+// ============================================================
+// Week definitions
+// ============================================================
 const WEEKS = [
   { month: '4月', weeks: ['W4'] },
   { month: '5月', weeks: ['W1','W2','W3','W4'] },
@@ -420,70 +578,269 @@ const WEEKS = [
   { month: '8月', weeks: ['W1','W2','W3','W4'] },
 ];
 
-function render() {
-  const table = document.getElementById('ganttTable');
-  let totalWeeks = 0;
-  WEEKS.forEach(m => totalWeeks += m.weeks.length);
+const WEEK_LABELS = [];
+WEEKS.forEach(function(m) { m.weeks.forEach(function(w) { WEEK_LABELS.push(m.month + w); }); });
 
-  // Today's week index (April W4 = 0)
-  const now = new Date();
-  const apr21 = new Date(2026, 3, 20); // April 20 = start of W4
-  const todayWeek = Math.floor((now - apr21) / (7 * 86400000));
+var STATUS_MAP = {
+  '': { label: '未着手', cls: 'todo' },
+  'todo': { label: '未着手', cls: 'todo' },
+  'progress': { label: '進行中', cls: 'progress' },
+  'done': { label: '完了', cls: 'done' },
+  'critical': { label: 'クリティカル', cls: 'critical' },
+  'warning': { label: '要注意', cls: 'warning' },
+  'milestone': { label: 'マイルストーン', cls: 'milestone' }
+};
 
-  // Month header
-  let monthRow = '<tr class="month-header"><th style="min-width:220px">タスク</th><th style="min-width:70px">担当</th>';
-  WEEKS.forEach(m => {
-    monthRow += `<th colspan="${m.weeks.length}">${m.month}</th>`;
+var STORE_LABELS = { k: '越谷', c: '清瀬' };
+var CATEGORY_ORDER = ['契約','内装','設備','許認可','採用','オープン準備'];
+
+// ============================================================
+// Default task data
+// ============================================================
+function getDefaultTasks() {
+  var idx = 0;
+  function t(name, who, store, category, s, e, status) {
+    idx++;
+    return {
+      id: store + '-' + category + '-' + idx,
+      name: name, who: who, store: store, category: category,
+      startWeek: s, endWeek: e,
+      status: status || 'todo',
+      note: ''
+    };
+  }
+  return [
+    // 越谷 契約
+    t('テナント契約締結','山内/森田','k','契約',0,1,'progress'),
+    t('初期費用払込','森田','k','契約',1,2,'todo'),
+    // 越谷 内装
+    t('現地打ち合わせ','渋谷内装','k','内装',0,1,'warning'),
+    t('図面確定・見積','渋谷内装','k','内装',1,3,'todo'),
+    t('内装施工','渋谷内装','k','内装',3,7,'todo'),
+    t('消防確認','渋谷内装','k','内装',6,7,'todo'),
+    // 越谷 設備
+    t('レセコン見積・発注（ファーミー）','取締役C/管理部A','k','設備',0,2,'critical'),
+    t('調剤機器見積・発注（ユヤマ）','根木','k','設備',0,2,'critical'),
+    t('レセコン納品・設置','ファーミー','k','設備',6,8,'todo'),
+    t('調剤機器納品・設置','ユヤマ','k','設備',7,8,'todo'),
+    t('Musubi・オン資セットアップ','管理部A','k','設備',8,9,'todo'),
+    // 越谷 許認可
+    t('管理薬剤師確定','山内','k','許認可',0,4,'warning'),
+    t('保健所事前相談','薬剤師B/管理部A','k','許認可',2,3,'todo'),
+    t('保健所検査','薬剤師B','k','許認可',7,8,'todo'),
+    t('厚生局指定申請','薬剤師B','k','許認可',7,9,'todo'),
+    t('公費申請（自立支援等）','薬剤師B','k','許認可',3,8,'todo'),
+    // 越谷 採用
+    t('管理薬剤師 面接','山内','k','採用',0,2,'progress'),
+    t('追加スタッフ採用','薬剤師B','k','採用',2,8,'todo'),
+    // 越谷 オープン準備
+    t('医薬品初期発注','管理薬剤師','k','オープン準備',8,9,'todo'),
+    t('★ 越谷オープン','','k','オープン準備',9,9,'milestone'),
+    // 清瀬 契約
+    t('保証審査','ACRE長屋','c','契約',0,2,'progress'),
+    t('テナント契約締結','山内/森田','c','契約',2,4,'todo'),
+    t('初期費用払込','森田','c','契約',4,5,'todo'),
+    // 清瀬 内装
+    t('現地打ち合わせ','渋谷内装','c','内装',0,0,'done'),
+    t('図面確定・見積','渋谷内装','c','内装',0,3,'progress'),
+    t('内装施工（スケルトン）','渋谷内装','c','内装',4,10,'todo'),
+    t('消防確認','渋谷内装','c','内装',9,10,'todo'),
+    // 清瀬 設備
+    t('レセコン見積・発注（ファーミー）','取締役C/管理部A','c','設備',1,3,'critical'),
+    t('調剤機器見積・発注（ユヤマ）','根木','c','設備',1,3,'critical'),
+    t('レセコン納品・設置','ファーミー','c','設備',10,12,'todo'),
+    t('調剤機器納品・設置','ユヤマ','c','設備',11,12,'todo'),
+    t('Musubi・オン資セットアップ','管理部A','c','設備',12,13,'todo'),
+    // 清瀬 許認可
+    t('管理薬剤師確定','山内','c','許認可',0,6,'todo'),
+    t('保健所事前相談','薬剤師B/管理部A','c','許認可',4,5,'todo'),
+    t('保健所検査','薬剤師B','c','許認可',10,11,'todo'),
+    t('厚生局指定申請','薬剤師B','c','許認可',11,13,'todo'),
+    t('公費申請','薬剤師B','c','許認可',5,12,'todo'),
+    // 清瀬 採用
+    t('リーダー 面接','山内','c','採用',0,2,'progress'),
+    t('追加スタッフ採用','薬剤師B','c','採用',3,12,'todo'),
+    // 清瀬 オープン準備
+    t('リーダー越谷で研修','リーダー','c','オープン準備',9,13,'todo'),
+    t('医薬品初期発注','管理薬剤師','c','オープン準備',12,13,'todo'),
+    t('★ 清瀬オープン','','c','オープン準備',13,13,'milestone')
+  ];
+}
+
+// ============================================================
+// Auth
+// ============================================================
+function doLogin() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function doLogout() { auth.signOut(); }
+
+auth.onAuthStateChanged(async function(user) {
+  if (user) {
+    currentUser = user;
+    var ud = await db.collection('store_sim_users').doc(user.email).get();
+    if (ud.exists) {
+      userRole = ud.data().role || 'viewer';
+    } else {
+      var snap = await db.collection('store_sim_users').limit(1).get();
+      if (snap.empty) {
+        await db.collection('store_sim_users').doc(user.email).set({
+          email: user.email, name: user.displayName, role: 'admin',
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+        userRole = 'admin';
+      } else {
+        alert('アクセス権がありません。\n利用を希望される方は director@wise-jmco.com へご連絡ください。');
+        auth.signOut();
+        return;
+      }
+    }
+    canEdit = userRole === 'admin' || userRole === 'editor';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('user-avatar').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+    document.getElementById('role-badge').textContent = userRole;
+    await loadTasks();
+  } else {
+    currentUser = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+  }
+});
+
+// ============================================================
+// Firestore
+// ============================================================
+var TASKS_DOC = 'current';
+var TASKS_COLLECTION = 'opening_tasks';
+
+async function loadTasks() {
+  try {
+    var doc = await db.collection(TASKS_COLLECTION).doc(TASKS_DOC).get();
+    if (doc.exists && doc.data().tasks && doc.data().tasks.length > 0) {
+      tasks = doc.data().tasks;
+    } else {
+      // First time: seed default data
+      tasks = getDefaultTasks();
+      await saveTasks(true);
+    }
+  } catch (e) {
+    console.error('Failed to load tasks:', e);
+    tasks = getDefaultTasks();
+  }
+  renderAll();
+}
+
+async function saveTasks(silent) {
+  if (!canEdit) return;
+  if (!silent) showSaveIndicator('saving');
+  try {
+    await db.collection(TASKS_COLLECTION).doc(TASKS_DOC).set({
+      tasks: tasks,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      updatedBy: currentUser ? currentUser.email : ''
+    });
+    if (!silent) showSaveIndicator('saved');
+  } catch (e) {
+    console.error('Save error:', e);
+    if (!silent) showSaveIndicator('error');
+  }
+}
+
+function debounceSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(function() { saveTasks(false); }, 2000);
+}
+
+function showSaveIndicator(state) {
+  var el = document.getElementById('saveIndicator');
+  el.className = 'save-indicator ' + state;
+  if (state === 'saving') el.textContent = '保存中...';
+  else if (state === 'saved') el.textContent = '保存完了';
+  else if (state === 'error') el.textContent = '保存エラー';
+  if (state !== 'saving') {
+    setTimeout(function() { el.className = 'save-indicator'; }, 2000);
+  }
+}
+
+// ============================================================
+// Grouped tasks for gantt
+// ============================================================
+function getGroupedTasks() {
+  var groups = [];
+  var stores = currentFilter === 'all' ? ['k','c'] : [currentFilter];
+  stores.forEach(function(store) {
+    var storeName = store === 'k' ? '越谷' : '清瀬';
+    CATEGORY_ORDER.forEach(function(cat) {
+      var catTasks = tasks.filter(function(t) { return t.store === store && t.category === cat; });
+      if (catTasks.length > 0) {
+        groups.push({ cat: storeName + '｜' + cat, store: store, tasks: catTasks });
+      }
+    });
+  });
+  return groups;
+}
+
+// ============================================================
+// Render gantt chart
+// ============================================================
+function renderGantt() {
+  var table = document.getElementById('ganttTable');
+  var totalWeeks = 0;
+  WEEKS.forEach(function(m) { totalWeeks += m.weeks.length; });
+
+  var now = new Date();
+  var apr21 = new Date(2026, 3, 20);
+  var todayWeek = Math.floor((now - apr21) / (7 * 86400000));
+
+  var monthRow = '<tr class="month-header"><th style="min-width:220px">タスク</th><th style="min-width:70px">担当</th>';
+  WEEKS.forEach(function(m) {
+    monthRow += '<th colspan="' + m.weeks.length + '">' + m.month + '</th>';
   });
   monthRow += '</tr>';
 
-  // Week header
-  let weekRow = '<tr class="week-header"><th></th><th></th>';
-  let weekIdx = 0;
-  WEEKS.forEach(m => {
-    m.weeks.forEach(w => {
-      const cls = weekIdx === todayWeek ? ' class="today"' : '';
-      weekRow += `<th${cls}>${w}</th>`;
+  var weekRow = '<tr class="week-header"><th></th><th></th>';
+  var weekIdx = 0;
+  WEEKS.forEach(function(m) {
+    m.weeks.forEach(function(w) {
+      var cls = weekIdx === todayWeek ? ' class="today"' : '';
+      weekRow += '<th' + cls + '>' + w + '</th>';
       weekIdx++;
     });
   });
   weekRow += '</tr>';
 
-  let body = '';
+  var body = '';
+  var groups = getGroupedTasks();
 
-  TASKS.forEach(group => {
-    const isK = group.cat.startsWith('越谷');
-    const storeKey = isK ? 'k' : 'c';
+  groups.forEach(function(group) {
+    var isK = group.store === 'k';
+    var catClass = isK ? 'koshigaya' : 'kiyose';
+    body += '<tr class="category-row ' + catClass + '"><td colspan="' + (totalWeeks + 2) + '">' + group.cat + '</td></tr>';
 
-    // Apply filter
-    if (currentFilter !== 'all' && currentFilter !== storeKey) return;
+    group.tasks.forEach(function(task) {
+      var storeClass = task.store === 'k' ? 'koshigaya' : 'kiyose';
+      var statusClass = storeClass;
+      if (task.status === 'done') statusClass = 'done';
+      if (task.status === 'critical') statusClass = 'critical';
+      if (task.status === 'warning') statusClass = 'warning';
 
-    const catClass = isK ? 'koshigaya' : 'kiyose';
-    body += `<tr class="category-row ${catClass}"><td colspan="${totalWeeks + 2}">${group.cat}</td></tr>`;
+      body += '<tr class="task-row clickable" data-task-id="' + task.id + '" onclick="highlightTask(\'' + task.id + '\')">';
+      body += '<td>' + task.name + '</td><td>' + (task.who || '') + '</td>';
 
-    group.tasks.forEach(task => {
-      const storeClass = task.store === 'k' ? 'koshigaya' : 'kiyose';
-      let statusClass = storeClass;
-      if (task.st === 'done') statusClass = 'done';
-      if (task.st === 'critical') statusClass = 'critical';
-      if (task.st === 'warning') statusClass = 'warning';
-
-      body += `<tr class="task-row"><td>${task.name}</td><td>${task.who}</td>`;
-
-      let wi = 0;
-      WEEKS.forEach(m => {
-        m.weeks.forEach(w => {
-          const cls = wi === todayWeek ? ' today' : '';
-          if (task.st === 'milestone' && wi === task.s) {
-            body += `<td class="bar-cell${cls}"><div class="milestone ${statusClass}"></div></td>`;
-          } else if (wi >= task.s && wi <= task.e) {
-            let barStyle = '';
-            if (wi === task.s) barStyle += 'border-radius: 3px 0 0 3px;';
-            if (wi === task.e) barStyle += 'border-radius: 0 3px 3px 0;';
-            if (wi === task.s && wi === task.e) barStyle = 'border-radius: 3px;';
-            body += `<td class="bar-cell${cls}"><div class="bar ${statusClass}" style="${barStyle}"></div></td>`;
+      var wi = 0;
+      WEEKS.forEach(function(m) {
+        m.weeks.forEach(function(w) {
+          var cls = wi === todayWeek ? ' today' : '';
+          if (task.status === 'milestone' && wi === task.startWeek) {
+            body += '<td class="bar-cell' + cls + '"><div class="milestone ' + statusClass + '"></div></td>';
+          } else if (wi >= task.startWeek && wi <= task.endWeek) {
+            var barStyle = '';
+            if (wi === task.startWeek) barStyle += 'border-radius: 3px 0 0 3px;';
+            if (wi === task.endWeek) barStyle += 'border-radius: 0 3px 3px 0;';
+            if (wi === task.startWeek && wi === task.endWeek) barStyle = 'border-radius: 3px;';
+            body += '<td class="bar-cell' + cls + '"><div class="bar ' + statusClass + '" style="' + barStyle + '"></div></td>';
           } else {
-            body += `<td class="${cls}"></td>`;
+            body += '<td class="' + cls + '"></td>';
           }
           wi++;
         });
@@ -493,30 +850,168 @@ function render() {
   });
 
   table.innerHTML = monthRow + weekRow + body;
-  document.getElementById('updatedAt').textContent = `最終更新: ${new Date().toLocaleString('ja-JP')}`;
 }
 
-let currentFilter = 'all';
+// ============================================================
+// Render task table
+// ============================================================
+function renderTaskTable() {
+  var tbody = document.getElementById('taskTableBody');
+  var incompleteOnly = document.getElementById('incompleteToggle').checked;
 
-function setFilter(filter) {
-  currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.filter === filter);
+  var filtered = tasks.filter(function(t) {
+    if (currentFilter !== 'all' && t.store !== currentFilter) return false;
+    if (currentCatFilter !== 'all' && t.category !== currentCatFilter) return false;
+    if (incompleteOnly && (t.status === 'done' || t.status === 'milestone')) return false;
+    return true;
   });
-  render();
 
-  // Show/hide summary cards
-  const kCard = document.querySelector('.summary-card.koshigaya');
-  const cCard = document.querySelector('.summary-card.kiyose');
-  const summaryDiv = document.querySelector('.summary');
+  // Sort by store then category order then startWeek
+  filtered.sort(function(a, b) {
+    if (a.store !== b.store) return a.store === 'k' ? -1 : 1;
+    var ai = CATEGORY_ORDER.indexOf(a.category);
+    var bi = CATEGORY_ORDER.indexOf(b.category);
+    if (ai !== bi) return ai - bi;
+    return a.startWeek - b.startWeek;
+  });
+
+  var html = '';
+  filtered.forEach(function(task) {
+    var st = STATUS_MAP[task.status] || STATUS_MAP['todo'];
+    var isHighlighted = task.id === highlightedTaskId ? ' highlighted' : '';
+    var disabled = !canEdit ? ' disabled' : '';
+
+    html += '<tr data-store="' + task.store + '" data-task-id="' + task.id + '" class="' + isHighlighted + '">';
+
+    // Status dropdown
+    html += '<td>';
+    html += '<select class="status-select st-' + st.cls + '" onchange="onStatusChange(\'' + task.id + '\', this.value)"' + disabled + '>';
+    html += '<option value="todo"' + (task.status === 'todo' || task.status === '' ? ' selected' : '') + '>未着手</option>';
+    html += '<option value="progress"' + (task.status === 'progress' ? ' selected' : '') + '>進行中</option>';
+    html += '<option value="done"' + (task.status === 'done' ? ' selected' : '') + '>完了</option>';
+    html += '<option value="critical"' + (task.status === 'critical' ? ' selected' : '') + '>クリティカル</option>';
+    html += '<option value="warning"' + (task.status === 'warning' ? ' selected' : '') + '>要注意</option>';
+    if (task.status === 'milestone') {
+      html += '<option value="milestone" selected>マイルストーン</option>';
+    }
+    html += '</select>';
+    html += '</td>';
+
+    // Task name
+    html += '<td>' + escapeHtml(task.name) + '</td>';
+    // Category
+    html += '<td>' + task.category + '</td>';
+    // Store
+    html += '<td class="store-cell">' + STORE_LABELS[task.store] + '</td>';
+    // Who
+    html += '<td>' + escapeHtml(task.who || '-') + '</td>';
+    // Start week
+    html += '<td class="week-label">' + (WEEK_LABELS[task.startWeek] || task.startWeek) + '</td>';
+    // End week
+    html += '<td class="week-label">' + (WEEK_LABELS[task.endWeek] || task.endWeek) + '</td>';
+    // Note
+    html += '<td><input type="text" class="note-input" value="' + escapeHtml(task.note || '') + '" ' +
+      'onchange="onNoteChange(\'' + task.id + '\', this.value)" ' +
+      'placeholder="メモを入力..."' + (canEdit ? '' : ' readonly') + '></td>';
+
+    html += '</tr>';
+  });
+
+  tbody.innerHTML = html;
+}
+
+// ============================================================
+// Render summary progress
+// ============================================================
+function renderSummary() {
+  ['k', 'c'].forEach(function(store) {
+    var storeTasks = tasks.filter(function(t) { return t.store === store && t.status !== 'milestone'; });
+    var doneCount = storeTasks.filter(function(t) { return t.status === 'done'; }).length;
+    var total = storeTasks.length;
+    var el = document.getElementById('progress-' + store);
+    if (el) el.textContent = doneCount + ' / ' + total + ' 完了';
+  });
+
+  // Show/hide summary cards based on filter
+  var kCard = document.getElementById('summary-k');
+  var cCard = document.getElementById('summary-c');
+  var summaryDiv = document.getElementById('summarySection');
   if (kCard && cCard && summaryDiv) {
-    kCard.style.display = (filter === 'c') ? 'none' : 'block';
-    cCard.style.display = (filter === 'k') ? 'none' : 'block';
-    summaryDiv.style.gridTemplateColumns = (filter === 'all') ? '1fr 1fr' : '1fr';
+    kCard.style.display = (currentFilter === 'c') ? 'none' : 'block';
+    cCard.style.display = (currentFilter === 'k') ? 'none' : 'block';
+    summaryDiv.style.gridTemplateColumns = (currentFilter === 'all') ? '1fr 1fr' : '1fr';
   }
 }
 
-render();
+// ============================================================
+// Render all
+// ============================================================
+function renderAll() {
+  renderGantt();
+  renderTaskTable();
+  renderSummary();
+  document.getElementById('updatedAt').textContent = '最終更新: ' + new Date().toLocaleString('ja-JP');
+}
+
+// ============================================================
+// Event handlers
+// ============================================================
+function setFilter(filter) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
+  });
+  renderAll();
+}
+
+function setCatFilter(cat) {
+  currentCatFilter = cat;
+  document.querySelectorAll('.task-filter-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.cat === cat);
+  });
+  renderTaskTable();
+}
+
+function onStatusChange(taskId, value) {
+  var task = tasks.find(function(t) { return t.id === taskId; });
+  if (!task || !canEdit) return;
+  task.status = value;
+  renderGantt();
+  renderSummary();
+  // Re-style the select that changed
+  var row = document.querySelector('#taskTableBody tr[data-task-id="' + taskId + '"]');
+  if (row) {
+    var sel = row.querySelector('.status-select');
+    if (sel) {
+      sel.className = 'status-select st-' + (STATUS_MAP[value] || STATUS_MAP['todo']).cls;
+    }
+  }
+  debounceSave();
+}
+
+function onNoteChange(taskId, value) {
+  var task = tasks.find(function(t) { return t.id === taskId; });
+  if (!task || !canEdit) return;
+  task.note = value;
+  debounceSave();
+}
+
+function highlightTask(taskId) {
+  highlightedTaskId = taskId;
+  // Remove old highlights
+  document.querySelectorAll('#taskTableBody tr.highlighted').forEach(function(r) { r.classList.remove('highlighted'); });
+  // Add new highlight
+  var row = document.querySelector('#taskTableBody tr[data-task-id="' + taskId + '"]');
+  if (row) {
+    row.classList.add('highlighted');
+    row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
 </script>
 </body>
 </html>
