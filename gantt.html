@@ -261,6 +261,14 @@
     background: var(--surface);
     padding: 2px 4px;
   }
+  .task-row td.td-vendor {
+    min-width: 80px;
+    font-size: 11px;
+    color: #1967d2;
+    background: var(--surface);
+    padding: 2px 4px;
+    font-weight: 500;
+  }
   .task-row td.td-status {
     min-width: 90px;
     background: var(--surface);
@@ -583,11 +591,11 @@ var CATEGORY_ORDER = ['契約','内装','設備','許認可','採用','オープ
 // ============================================================
 function getDefaultTasks() {
   var idx = 0;
-  function t(name, who, store, category, s, e, status) {
+  function t(name, who, vendor, store, category, s, e, status) {
     idx++;
     return {
       id: store + '-' + category + '-' + idx,
-      name: name, who: who, store: store, category: category,
+      name: name, who: who, vendor: vendor || '', store: store, category: category,
       startWeek: s, endWeek: e,
       status: status || 'todo',
       note: ''
@@ -595,58 +603,58 @@ function getDefaultTasks() {
   }
   return [
     // 越谷 契約
-    t('テナント契約締結','山内/森田','k','契約',0,1,'progress'),
-    t('初期費用払込','森田','k','契約',1,2,'todo'),
+    t('テナント契約締結','山内/森田','','k','契約',0,1,'progress'),
+    t('初期費用払込','森田','','k','契約',1,2,'todo'),
     // 越谷 内装
-    t('現地打ち合わせ','渋谷内装','k','内装',0,1,'warning'),
-    t('図面確定・見積','渋谷内装','k','内装',1,3,'todo'),
-    t('内装施工','渋谷内装','k','内装',3,7,'todo'),
-    t('消防確認','渋谷内装','k','内装',6,7,'todo'),
+    t('現地打ち合わせ','山内','渋谷内装','k','内装',0,1,'warning'),
+    t('図面確定・見積','山内','渋谷内装','k','内装',1,3,'todo'),
+    t('内装施工','','渋谷内装','k','内装',3,7,'todo'),
+    t('消防確認','','渋谷内装','k','内装',6,7,'todo'),
     // 越谷 設備
-    t('レセコン見積・発注（モイネット（ファーミー））','取締役C/管理部A','k','設備',0,2,'critical'),
-    t('調剤機器見積・発注（ユヤマ）','根木','k','設備',0,2,'critical'),
-    t('レセコン納品・設置','モイネット（ファーミー）','k','設備',6,8,'todo'),
-    t('調剤機器納品・設置','ユヤマ','k','設備',7,8,'todo'),
-    t('Musubi・オン資セットアップ','管理部A','k','設備',8,9,'todo'),
+    t('レセコン見積・発注','取締役C/管理部A','モイネット','k','設備',0,2,'critical'),
+    t('調剤機器見積・発注','取締役C/管理部A','ユヤマ根木','k','設備',0,2,'critical'),
+    t('レセコン納品・設置','管理部A','モイネット','k','設備',6,8,'todo'),
+    t('調剤機器納品・設置','管理部A','ユヤマ根木','k','設備',7,8,'todo'),
+    t('Musubi・オン資セットアップ','管理部A','KAKEHASHI','k','設備',8,9,'todo'),
     // 越谷 許認可
-    t('管理薬剤師確定','山内','k','許認可',0,4,'warning'),
-    t('保健所事前相談','薬剤師B/管理部A','k','許認可',2,3,'todo'),
-    t('保健所検査','薬剤師B','k','許認可',7,8,'todo'),
-    t('厚生局指定申請','薬剤師B','k','許認可',7,9,'todo'),
-    t('公費申請（自立支援等）','薬剤師B','k','許認可',3,8,'todo'),
+    t('管理薬剤師確定','山内','','k','許認可',0,4,'warning'),
+    t('保健所事前相談','薬剤師B/管理部A','越谷市保健所','k','許認可',2,3,'todo'),
+    t('保健所検査','薬剤師B','越谷市保健所','k','許認可',7,8,'todo'),
+    t('厚生局指定申請','薬剤師B','関東信越厚生局','k','許認可',7,9,'todo'),
+    t('公費申請（自立支援等）','薬剤師B','','k','許認可',3,8,'todo'),
     // 越谷 採用
-    t('管理薬剤師 面接','山内','k','採用',0,2,'progress'),
-    t('追加スタッフ採用','薬剤師B','k','採用',2,8,'todo'),
+    t('管理薬剤師 面接','山内','','k','採用',0,2,'progress'),
+    t('追加スタッフ採用','薬剤師B','','k','採用',2,8,'todo'),
     // 越谷 オープン準備
-    t('医薬品初期発注','管理薬剤師','k','オープン準備',8,9,'todo'),
-    t('★ 越谷オープン','','k','オープン準備',9,9,'milestone'),
+    t('医薬品初期発注','管理薬剤師','','k','オープン準備',8,9,'todo'),
+    t('★ 越谷オープン','','','k','オープン準備',9,9,'milestone'),
     // 清瀬 契約
-    t('保証審査','ACRE長屋','c','契約',0,2,'progress'),
-    t('テナント契約締結','山内/森田','c','契約',2,4,'todo'),
-    t('初期費用払込','森田','c','契約',4,5,'todo'),
+    t('保証審査','山内/森田','ACRE長屋','c','契約',0,2,'progress'),
+    t('テナント契約締結','山内/森田','','c','契約',2,4,'todo'),
+    t('初期費用払込','森田','','c','契約',4,5,'todo'),
     // 清瀬 内装
-    t('現地打ち合わせ','渋谷内装','c','内装',0,0,'done'),
-    t('図面確定・見積','渋谷内装','c','内装',0,3,'progress'),
-    t('内装施工（スケルトン）','渋谷内装','c','内装',4,10,'todo'),
-    t('消防確認','渋谷内装','c','内装',9,10,'todo'),
+    t('現地打ち合わせ','山内','渋谷内装','c','内装',0,0,'done'),
+    t('図面確定・見積','山内','渋谷内装','c','内装',0,3,'progress'),
+    t('内装施工（スケルトン）','','渋谷内装','c','内装',4,10,'todo'),
+    t('消防確認','','渋谷内装','c','内装',9,10,'todo'),
     // 清瀬 設備
-    t('レセコン見積・発注（モイネット（ファーミー））','取締役C/管理部A','c','設備',1,3,'critical'),
-    t('調剤機器見積・発注（ユヤマ）','根木','c','設備',1,3,'critical'),
-    t('レセコン納品・設置','モイネット（ファーミー）','c','設備',10,12,'todo'),
-    t('調剤機器納品・設置','ユヤマ','c','設備',11,12,'todo'),
-    t('Musubi・オン資セットアップ','管理部A','c','設備',12,13,'todo'),
+    t('レセコン見積・発注','取締役C/管理部A','モイネット','c','設備',1,3,'critical'),
+    t('調剤機器見積・発注','取締役C/管理部A','ユヤマ根木','c','設備',1,3,'critical'),
+    t('レセコン納品・設置','管理部A','モイネット','c','設備',10,12,'todo'),
+    t('調剤機器納品・設置','管理部A','ユヤマ根木','c','設備',11,12,'todo'),
+    t('Musubi・オン資セットアップ','管理部A','KAKEHASHI','c','設備',12,13,'todo'),
     // 清瀬 許認可
-    t('管理薬剤師確定','山内','c','許認可',0,6,'todo'),
-    t('保健所事前相談','薬剤師B/管理部A','c','許認可',4,5,'todo'),
-    t('保健所検査','薬剤師B','c','許認可',10,11,'todo'),
-    t('厚生局指定申請','薬剤師B','c','許認可',11,13,'todo'),
-    t('公費申請','薬剤師B','c','許認可',5,12,'todo'),
+    t('管理薬剤師確定','山内','','c','許認可',0,6,'todo'),
+    t('保健所事前相談','薬剤師B/管理部A','多摩小平保健所','c','許認可',4,5,'todo'),
+    t('保健所検査','薬剤師B','多摩小平保健所','c','許認可',10,11,'todo'),
+    t('厚生局指定申請','薬剤師B','関東信越厚生局','c','許認可',11,13,'todo'),
+    t('公費申請','薬剤師B','','c','許認可',5,12,'todo'),
     // 清瀬 採用
-    t('リーダー 面接','山内','c','採用',0,2,'progress'),
-    t('追加スタッフ採用','薬剤師B','c','採用',3,12,'todo'),
+    t('リーダー 面接','山内','','c','採用',0,2,'progress'),
+    t('追加スタッフ採用','薬剤師B','','c','採用',3,12,'todo'),
     // 清瀬 オープン準備
-    t('リーダー越谷で研修','リーダー','c','オープン準備',9,13,'todo'),
-    t('医薬品初期発注','管理薬剤師','c','オープン準備',12,13,'todo'),
+    t('リーダー越谷で研修','リーダー','','c','オープン準備',9,13,'todo'),
+    t('医薬品初期発注','管理薬剤師','','c','オープン準備',12,13,'todo'),
     t('★ 清瀬オープン','','c','オープン準備',13,13,'milestone')
   ];
 }
@@ -799,14 +807,15 @@ function renderGantt() {
   var apr21 = new Date(2026, 3, 20);
   var todayWeek = Math.floor((now - apr21) / (7 * 86400000));
 
-  // Column count: taskName + who + status + note + weeks
-  var fixedCols = 4;
+  // Column count: taskName + internalWho + vendor + status + note + weeks
+  var fixedCols = 5;
   var totalCols = fixedCols + totalWeekCount;
 
   // Month header row
   var monthRow = '<tr class="month-header">';
   monthRow += '<th style="min-width:200px">タスク名</th>';
-  monthRow += '<th style="min-width:80px">担当</th>';
+  monthRow += '<th style="min-width:80px">社内担当</th>';
+  monthRow += '<th style="min-width:80px">業者</th>';
   monthRow += '<th style="min-width:90px">ステータス</th>';
   monthRow += '<th style="min-width:120px">備考</th>';
   WEEKS.forEach(function(m) {
@@ -815,7 +824,7 @@ function renderGantt() {
   monthRow += '</tr>';
 
   // Week header row
-  var weekRow = '<tr class="week-header"><th></th><th></th><th></th><th></th>';
+  var weekRow = '<tr class="week-header"><th></th><th></th><th></th><th></th><th></th>';
   var weekIdx = 0;
   WEEKS.forEach(function(m) {
     m.weeks.forEach(function(w) {
@@ -859,8 +868,11 @@ function renderGantt() {
         // Task name
         body += '<td class="td-name">' + escapeHtml(task.name) + '</td>';
 
-        // Who
+        // Internal who
         body += '<td class="td-who">' + escapeHtml(task.who || '-') + '</td>';
+
+        // Vendor
+        body += '<td class="td-vendor">' + escapeHtml(task.vendor || '-') + '</td>';
 
         // Status dropdown
         body += '<td class="td-status">';
