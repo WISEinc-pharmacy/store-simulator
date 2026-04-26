@@ -394,6 +394,176 @@
     color: var(--text-secondary);
   }
 
+  /* Add task button on category row */
+  .cat-add-btn {
+    float: right;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.15);
+    background: rgba(255,255,255,0.6);
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    line-height: 1;
+    margin-left: 8px;
+    transition: all 0.2s;
+  }
+  .cat-add-btn:hover {
+    background: rgba(255,255,255,0.9);
+    transform: scale(1.15);
+  }
+
+  /* Delete button on task rows */
+  .task-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    border: none;
+    background: transparent;
+    color: transparent;
+    font-size: 12px;
+    cursor: pointer;
+    margin-right: 4px;
+    transition: all 0.15s;
+    vertical-align: middle;
+    line-height: 1;
+  }
+  .task-row:hover .task-delete-btn {
+    color: #999;
+  }
+  .task-row:hover .task-delete-btn:hover {
+    color: var(--critical);
+    background: #fce8e6;
+  }
+
+  /* Editable text fields (name, who, vendor) */
+  .inline-edit {
+    padding: 3px 6px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: inherit;
+    width: 100%;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-weight: inherit;
+  }
+  .inline-edit:hover { border-color: var(--border); }
+  .inline-edit:focus { outline: none; border-color: var(--primary); background: #fff; }
+
+  /* Modal overlay */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 28px 32px;
+    width: 90%;
+    max-width: 460px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    animation: modalIn 0.2s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(-20px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .modal-box h2 {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    color: var(--text);
+  }
+  .modal-field {
+    margin-bottom: 14px;
+  }
+  .modal-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .modal-field input,
+  .modal-field select {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--surface);
+    color: var(--text);
+  }
+  .modal-field input:focus,
+  .modal-field select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(26,115,232,0.15);
+  }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+  }
+  .modal-btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    transition: all 0.2s;
+  }
+  .modal-btn:hover { background: #f1f3f4; }
+  .modal-btn.primary {
+    background: var(--primary);
+    color: #fff;
+    border-color: var(--primary);
+  }
+  .modal-btn.primary:hover { opacity: 0.9; }
+
+  /* Add category button */
+  .add-category-bar {
+    padding: 10px 24px 16px;
+  }
+  .add-category-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 18px;
+    border: 1px dashed var(--border);
+    background: var(--surface);
+    color: var(--text-secondary);
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .add-category-btn:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: #e8f0fe;
+  }
+
   @media(max-width:768px){
     .summary { grid-template-columns: 1fr; }
     .header { flex-direction: column; align-items: flex-start; }
@@ -474,6 +644,85 @@
 <table class="gantt-table" id="ganttTable">
 </table>
 </div>
+</div>
+
+<!-- Add Category button (admin/editor only) -->
+<div class="add-category-bar" id="addCategoryBar" style="display:none;">
+  <button class="add-category-btn" onclick="openCategoryModal()">＋ カテゴリ追加</button>
+</div>
+
+<!-- Task add modal -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal-box">
+    <h2 id="taskModalTitle">タスク追加</h2>
+    <div class="modal-field">
+      <label>タスク名 <span style="color:var(--critical)">*</span></label>
+      <input type="text" id="modalTaskName" placeholder="タスク名を入力">
+    </div>
+    <div class="modal-field">
+      <label>社内担当</label>
+      <input type="text" id="modalTaskWho" placeholder="例: 山内/森田">
+    </div>
+    <div class="modal-field">
+      <label>業者</label>
+      <input type="text" id="modalTaskVendor" placeholder="例: 渋谷内装">
+    </div>
+    <div class="modal-field">
+      <label>開始週</label>
+      <select id="modalTaskStart"></select>
+    </div>
+    <div class="modal-field">
+      <label>終了週</label>
+      <select id="modalTaskEnd"></select>
+    </div>
+    <div class="modal-field">
+      <label>ステータス</label>
+      <select id="modalTaskStatus">
+        <option value="todo">未着手</option>
+        <option value="progress">進行中</option>
+        <option value="done">完了</option>
+        <option value="critical">クリティカル</option>
+        <option value="warning">要注意</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>備考</label>
+      <input type="text" id="modalTaskNote" placeholder="メモ...">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeTaskModal()">キャンセル</button>
+      <button class="modal-btn primary" onclick="confirmAddTask()">追加</button>
+    </div>
+  </div>
+</div>
+
+<!-- Category add modal -->
+<div class="modal-overlay" id="categoryModal">
+  <div class="modal-box">
+    <h2>カテゴリ追加</h2>
+    <div class="modal-field">
+      <label>店舗</label>
+      <select id="modalCatStore">
+        <option value="k">越谷</option>
+        <option value="c">清瀬</option>
+      </select>
+    </div>
+    <div class="modal-field">
+      <label>カテゴリ名 <span style="color:var(--critical)">*</span></label>
+      <input type="text" id="modalCatName" placeholder="カテゴリ名を入力">
+    </div>
+    <div class="modal-field">
+      <label>タイプ</label>
+      <select id="modalCatType">
+        <option value="社内">社内</option>
+        <option value="業者">業者</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeCategoryModal()">キャンセル</button>
+      <button class="modal-btn primary" onclick="confirmAddCategory()">追加</button>
+    </div>
+  </div>
 </div>
 
 <!-- Summary cards -->
@@ -585,6 +834,9 @@ var STATUS_MAP = {
 
 var STORE_LABELS = { k: '越谷', c: '清瀬' };
 var CATEGORY_ORDER = ['契約','内装','設備','許認可','採用','オープン準備'];
+
+// Track custom categories added by user (not in CATEGORY_ORDER)
+var customCategories = [];  // will be populated from tasks data
 
 // ============================================================
 // Default task data
@@ -756,13 +1008,26 @@ function showSaveIndicator(state) {
 // ============================================================
 // Grouped tasks
 // ============================================================
+function getAllCategories() {
+  // Collect unique categories from tasks that are not in CATEGORY_ORDER
+  var custom = [];
+  tasks.forEach(function(t) {
+    if (CATEGORY_ORDER.indexOf(t.category) === -1 && custom.indexOf(t.category) === -1) {
+      custom.push(t.category);
+    }
+  });
+  customCategories = custom;
+  return CATEGORY_ORDER.concat(custom);
+}
+
 function getGroupedTasks() {
   var groups = [];
   var stores = currentFilter === 'all' ? ['k','c'] : [currentFilter];
   var incompleteOnly = document.getElementById('incompleteToggle').checked;
+  var allCats = getAllCategories();
   stores.forEach(function(store) {
     var storeName = store === 'k' ? '越谷' : '清瀬';
-    CATEGORY_ORDER.forEach(function(cat) {
+    allCats.forEach(function(cat) {
       // Apply category filter
       if (currentCatFilter !== 'all' && cat !== currentCatFilter) return;
       var catTasks = tasks.filter(function(t) { return t.store === store && t.category === cat; });
@@ -772,13 +1037,14 @@ function getGroupedTasks() {
           filteredTasks = catTasks.filter(function(t) { return t.status !== 'done' && t.status !== 'milestone'; });
         }
         // Always show category row; show filtered tasks inside
-        var tag = CATEGORY_TAGS[cat] || '';
+        var tag = CATEGORY_TAGS[cat] || 'カスタム';
         var doneCount = catTasks.filter(function(t) { return t.status === 'done'; }).length;
         var nonMilestone = catTasks.filter(function(t) { return t.status !== 'milestone'; }).length;
         groups.push({
           catLabel: storeName + '｜' + cat + '【' + tag + '】',
           catKey: store + '-' + cat,
           store: store,
+          category: cat,
           doneCount: doneCount,
           totalCount: nonMilestone,
           tasks: filteredTasks
@@ -845,11 +1111,14 @@ function renderGantt() {
     var toggleIcon = isCollapsed ? '&#9654;' : '&#9660;';
     var progressText = '(' + group.doneCount + '/' + group.totalCount + '完了)';
 
-    body += '<tr class="category-row ' + catClass + '" onclick="toggleCategory(\'' + group.catKey + '\')">';
-    body += '<td colspan="' + totalCols + '">';
+    body += '<tr class="category-row ' + catClass + '">';
+    body += '<td colspan="' + totalCols + '" onclick="toggleCategory(\'' + group.catKey + '\')">';
     body += '<span class="cat-toggle">' + toggleIcon + '</span>';
     body += escapeHtml(group.catLabel);
     body += '<span class="cat-progress">' + progressText + '</span>';
+    if (canEdit) {
+      body += '<button class="cat-add-btn" onclick="event.stopPropagation(); openTaskModal(\'' + escapeHtml(group.store) + '\', \'' + escapeHtml(group.category) + '\')" title="タスク追加">＋</button>';
+    }
     body += '</td></tr>';
 
     if (!isCollapsed) {
@@ -865,14 +1134,33 @@ function renderGantt() {
 
         body += '<tr class="task-row" data-task-id="' + task.id + '">';
 
-        // Task name
-        body += '<td class="td-name">' + escapeHtml(task.name) + '</td>';
+        // Task name (with delete button if canEdit)
+        body += '<td class="td-name">';
+        if (canEdit) {
+          body += '<button class="task-delete-btn" onclick="deleteTask(\'' + task.id + '\')" title="削除">&times;</button>';
+          body += '<input type="text" class="inline-edit" value="' + escapeHtml(task.name) + '" onchange="onFieldChange(\'' + task.id + '\', \'name\', this.value)" style="font-size:12px;">';
+        } else {
+          body += escapeHtml(task.name);
+        }
+        body += '</td>';
 
         // Internal who
-        body += '<td class="td-who">' + escapeHtml(task.who || '-') + '</td>';
+        body += '<td class="td-who">';
+        if (canEdit) {
+          body += '<input type="text" class="inline-edit" value="' + escapeHtml(task.who || '') + '" onchange="onFieldChange(\'' + task.id + '\', \'who\', this.value)" placeholder="-" style="font-size:11px; color:var(--text-secondary);">';
+        } else {
+          body += escapeHtml(task.who || '-');
+        }
+        body += '</td>';
 
         // Vendor
-        body += '<td class="td-vendor">' + escapeHtml(task.vendor || '-') + '</td>';
+        body += '<td class="td-vendor">';
+        if (canEdit) {
+          body += '<input type="text" class="inline-edit" value="' + escapeHtml(task.vendor || '') + '" onchange="onFieldChange(\'' + task.id + '\', \'vendor\', this.value)" placeholder="-" style="font-size:11px; color:#1967d2; font-weight:500;">';
+        } else {
+          body += escapeHtml(task.vendor || '-');
+        }
+        body += '</td>';
 
         // Status dropdown
         body += '<td class="td-status">';
@@ -947,6 +1235,7 @@ function renderSummary() {
 function renderAll() {
   renderGantt();
   renderSummary();
+  updateEditUI();
   document.getElementById('updatedAt').textContent = '最終更新: ' + new Date().toLocaleString('ja-JP');
 }
 
@@ -988,6 +1277,176 @@ function escapeHtml(str) {
   if (!str) return '';
   return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
+
+// ============================================================
+// Inline field edit (name, who, vendor)
+// ============================================================
+function onFieldChange(taskId, field, value) {
+  var task = tasks.find(function(t) { return t.id === taskId; });
+  if (!task || !canEdit) return;
+  task[field] = value;
+  debounceSave();
+}
+
+// ============================================================
+// Task delete
+// ============================================================
+function deleteTask(taskId) {
+  var task = tasks.find(function(t) { return t.id === taskId; });
+  if (!task || !canEdit) return;
+  if (!confirm('「' + task.name + '」を削除しますか？')) return;
+  tasks = tasks.filter(function(t) { return t.id !== taskId; });
+  renderAll();
+  saveTasks(false);
+}
+
+// ============================================================
+// Task add modal
+// ============================================================
+var pendingTaskStore = '';
+var pendingTaskCategory = '';
+
+function populateWeekSelects() {
+  var startSel = document.getElementById('modalTaskStart');
+  var endSel = document.getElementById('modalTaskEnd');
+  startSel.innerHTML = '';
+  endSel.innerHTML = '';
+  WEEK_LABELS.forEach(function(label, idx) {
+    startSel.innerHTML += '<option value="' + idx + '">' + label + '</option>';
+    endSel.innerHTML += '<option value="' + idx + '">' + label + '</option>';
+  });
+}
+
+function openTaskModal(store, category) {
+  pendingTaskStore = store;
+  pendingTaskCategory = category;
+  var storeName = store === 'k' ? '越谷' : '清瀬';
+  document.getElementById('taskModalTitle').textContent = storeName + '｜' + category + ' - タスク追加';
+  document.getElementById('modalTaskName').value = '';
+  document.getElementById('modalTaskWho').value = '';
+  document.getElementById('modalTaskVendor').value = '';
+  document.getElementById('modalTaskStatus').value = 'todo';
+  document.getElementById('modalTaskNote').value = '';
+  populateWeekSelects();
+  document.getElementById('modalTaskStart').value = '0';
+  document.getElementById('modalTaskEnd').value = '0';
+  document.getElementById('taskModal').classList.add('active');
+  setTimeout(function() { document.getElementById('modalTaskName').focus(); }, 100);
+}
+
+function closeTaskModal() {
+  document.getElementById('taskModal').classList.remove('active');
+}
+
+function confirmAddTask() {
+  var name = document.getElementById('modalTaskName').value.trim();
+  if (!name) {
+    alert('タスク名を入力してください。');
+    return;
+  }
+  var newTask = {
+    id: pendingTaskStore + '-' + pendingTaskCategory + '-' + Date.now(),
+    name: name,
+    who: document.getElementById('modalTaskWho').value.trim(),
+    vendor: document.getElementById('modalTaskVendor').value.trim(),
+    store: pendingTaskStore,
+    category: pendingTaskCategory,
+    startWeek: parseInt(document.getElementById('modalTaskStart').value),
+    endWeek: parseInt(document.getElementById('modalTaskEnd').value),
+    status: document.getElementById('modalTaskStatus').value,
+    note: document.getElementById('modalTaskNote').value.trim()
+  };
+  // Insert after last task of same store+category
+  var insertIdx = -1;
+  for (var i = tasks.length - 1; i >= 0; i--) {
+    if (tasks[i].store === pendingTaskStore && tasks[i].category === pendingTaskCategory) {
+      insertIdx = i + 1;
+      break;
+    }
+  }
+  if (insertIdx === -1) {
+    tasks.push(newTask);
+  } else {
+    tasks.splice(insertIdx, 0, newTask);
+  }
+  closeTaskModal();
+  // Ensure category is expanded
+  collapsedCategories[pendingTaskStore + '-' + pendingTaskCategory] = false;
+  renderAll();
+  saveTasks(false);
+}
+
+// ============================================================
+// Category add modal
+// ============================================================
+function openCategoryModal() {
+  document.getElementById('modalCatStore').value = 'k';
+  document.getElementById('modalCatName').value = '';
+  document.getElementById('modalCatType').value = '社内';
+  document.getElementById('categoryModal').classList.add('active');
+  setTimeout(function() { document.getElementById('modalCatName').focus(); }, 100);
+}
+
+function closeCategoryModal() {
+  document.getElementById('categoryModal').classList.remove('active');
+}
+
+function confirmAddCategory() {
+  var catName = document.getElementById('modalCatName').value.trim();
+  if (!catName) {
+    alert('カテゴリ名を入力してください。');
+    return;
+  }
+  var store = document.getElementById('modalCatStore').value;
+  var catType = document.getElementById('modalCatType').value;
+  // Register custom tag
+  if (!CATEGORY_TAGS[catName]) {
+    CATEGORY_TAGS[catName] = catType;
+  }
+  // Add a placeholder task so the category appears
+  var placeholderTask = {
+    id: store + '-' + catName + '-' + Date.now(),
+    name: '新規タスク',
+    who: '',
+    vendor: '',
+    store: store,
+    category: catName,
+    startWeek: 0,
+    endWeek: 0,
+    status: 'todo',
+    note: ''
+  };
+  tasks.push(placeholderTask);
+  closeCategoryModal();
+  renderAll();
+  saveTasks(false);
+}
+
+// ============================================================
+// Show/hide edit-only UI based on canEdit
+// ============================================================
+function updateEditUI() {
+  var addCatBar = document.getElementById('addCategoryBar');
+  if (addCatBar) addCatBar.style.display = canEdit ? 'block' : 'none';
+}
+
+// ============================================================
+// Close modals on overlay click
+// ============================================================
+document.addEventListener('click', function(e) {
+  if (e.target.id === 'taskModal') closeTaskModal();
+  if (e.target.id === 'categoryModal') closeCategoryModal();
+});
+
+// ============================================================
+// Close modals on Escape key
+// ============================================================
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeTaskModal();
+    closeCategoryModal();
+  }
+});
 </script>
 </body>
 </html>
