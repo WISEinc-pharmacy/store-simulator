@@ -1117,7 +1117,7 @@ function renderGantt() {
     body += escapeHtml(group.catLabel);
     body += '<span class="cat-progress">' + progressText + '</span>';
     if (canEdit) {
-      body += '<button class="cat-add-btn" onclick="event.stopPropagation(); openTaskModal(\'' + escapeHtml(group.store) + '\', \'' + escapeHtml(group.category) + '\')" title="タスク追加">＋</button>';
+      body += '<button class="cat-add-btn" onclick="event.stopPropagation(); openTaskModal(\'' + escapeHtml(group.store) + '\', \'' + escapeHtml(group.category) + '\')" title="タスク追加">＋ タスク追加</button>';
     }
     body += '</td></tr>';
 
