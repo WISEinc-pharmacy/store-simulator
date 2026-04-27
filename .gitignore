@@ -1,0 +1,10 @@
+# 機密情報（.env.example は除外しない）
+.env
+.env.local
+.env.*.local
+
+# 依存パッケージ
+node_modules/
+
+# macOS
+.DS_Store

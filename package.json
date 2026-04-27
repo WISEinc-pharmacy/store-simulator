@@ -1,0 +1,25 @@
+{
+  "name": "store_simulator",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WISEinc-pharmacy/store-simulator.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/WISEinc-pharmacy/store-simulator/issues"
+  },
+  "homepage": "https://github.com/WISEinc-pharmacy/store-simulator#readme",
+  "dependencies": {
+    "firebase": "^12.12.1",
+    "firebase-admin": "^13.8.0"
+  }
+}
