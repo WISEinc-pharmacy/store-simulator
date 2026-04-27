@@ -631,6 +631,16 @@
       未完了のみ
     </label>
   </div>
+  <div class="filter-group">
+    <span class="filter-label">担当者:</span>
+    <select id="whoFilter" onchange="setWhoFilter(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;cursor:pointer">
+      <option value="">すべて</option>
+    </select>
+    <span class="filter-label" style="margin-left:12px">業者:</span>
+    <select id="vendorFilter" onchange="setVendorFilter(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:#fff;cursor:pointer">
+      <option value="">すべて</option>
+    </select>
+  </div>
   <div class="legend-inline">
     <div class="legend-item"><div class="legend-dot" style="background:var(--koshigaya)"></div>越谷</div>
     <div class="legend-item"><div class="legend-dot" style="background:var(--kiyose)"></div>清瀬</div>
@@ -791,6 +801,8 @@ var currentUser = null, userRole = 'viewer', canEdit = false;
 var tasks = [];
 var currentFilter = 'all';
 var currentCatFilter = 'all';
+var currentWhoFilter = '';
+var currentVendorFilter = '';
 var saveTimer = null;
 // Track collapsed state per category key (e.g. "k-契約")
 var collapsedCategories = {};
@@ -1035,9 +1047,16 @@ function getGroupedTasks() {
       if (catTasks.length > 0) {
         var filteredTasks = catTasks;
         if (incompleteOnly) {
-          filteredTasks = catTasks.filter(function(t) { return t.status !== 'done' && t.status !== 'milestone'; });
+          filteredTasks = filteredTasks.filter(function(t) { return t.status !== 'done' && t.status !== 'milestone'; });
         }
-        // Always show category row; show filtered tasks inside
+        if (currentWhoFilter) {
+          filteredTasks = filteredTasks.filter(function(t) { return (t.who || '').trim() === currentWhoFilter; });
+        }
+        if (currentVendorFilter) {
+          filteredTasks = filteredTasks.filter(function(t) { return (t.vendor || '').trim() === currentVendorFilter; });
+        }
+        // Hide category if person/vendor filter active and no matching tasks
+        if ((currentWhoFilter || currentVendorFilter) && filteredTasks.length === 0) return;
         var tag = CATEGORY_TAGS[cat] || 'カスタム';
         var doneCount = catTasks.filter(function(t) { return t.status === 'done'; }).length;
         var nonMilestone = catTasks.filter(function(t) { return t.status !== 'milestone'; }).length;
@@ -1234,6 +1253,7 @@ function renderSummary() {
 // Render all
 // ============================================================
 function renderAll() {
+  updateFilterDropdowns();
   renderGantt();
   renderSummary();
   updateEditUI();
@@ -1257,6 +1277,33 @@ function setCatFilter(cat) {
     btn.classList.toggle('active', btn.dataset.cat === cat);
   });
   renderAll();
+}
+
+function setWhoFilter(val) {
+  currentWhoFilter = val;
+  renderAll();
+}
+
+function setVendorFilter(val) {
+  currentVendorFilter = val;
+  renderAll();
+}
+
+function updateFilterDropdowns() {
+  var whos = {}, vendors = {};
+  tasks.forEach(function(t) {
+    if (t.who && t.who.trim()) whos[t.who.trim()] = true;
+    if (t.vendor && t.vendor.trim()) vendors[t.vendor.trim()] = true;
+  });
+  var whoSel = document.getElementById('whoFilter');
+  var vendorSel = document.getElementById('vendorFilter');
+  var whoVal = whoSel.value, vendorVal = vendorSel.value;
+  whoSel.innerHTML = '<option value="">すべて</option>' + Object.keys(whos).sort().map(function(w) {
+    return '<option value="' + w + '"' + (w === whoVal ? ' selected' : '') + '>' + w + '</option>';
+  }).join('');
+  vendorSel.innerHTML = '<option value="">すべて</option>' + Object.keys(vendors).sort().map(function(v) {
+    return '<option value="' + v + '"' + (v === vendorVal ? ' selected' : '') + '>' + v + '</option>';
+  }).join('');
 }
 
 function onStatusChange(taskId, value) {
