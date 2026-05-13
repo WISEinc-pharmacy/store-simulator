@@ -937,7 +937,7 @@ function getDefaultTasks() {
 // ============================================================
 // Auth
 // ============================================================
-function doLogin(){auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err=>{alert('ログインエラー: '+err.message)});
 }
 function doLogout() { auth.signOut(); }
 
