@@ -53,7 +53,8 @@ function log(msg, cls=''){
   el.scrollTop=el.scrollHeight;
 }
 
-function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider())}
+function doLogin(){auth.signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+}
 
 auth.onAuthStateChanged(user=>{
   if(user){

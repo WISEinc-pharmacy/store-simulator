@@ -31,7 +31,8 @@ const db = firebase.firestore();
 firebase.auth().onAuthStateChanged(u => {
   if(u) { document.getElementById('del-btn').disabled = false; document.getElementById('status').textContent = 'ログイン済み: ' + u.email; }
 });
-function doLogin() { firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function doLogin(){firebase.auth().signInWithRedirect(new firebase.auth.GoogleAuthProvider());
+}
 async function doDelete() {
   const s = document.getElementById('status');
   try {
