@@ -199,6 +199,7 @@ const koshigayaInvestment = {
     { label: "ユヤマ（分包機+什器一式）", value: 5214000, pdfUrl: "https://drive.google.com/file/d/1jiL5PORCrz6Bhd-l00jneuna_mnnDcSS/view" },
     { label: "渋谷内装（改修工事）", value: 1858000, pdfUrl: "https://drive.google.com/file/d/1qRl1WXcfVh2lCs1lzlfdHzRgtqVAn0MV/view" },
     { label: "モイネット（Pharmy Connect+オン資+電子処方箋）", value: 1650000 },
+    { label: "中日販売（什器一式）", value: 2618067, pdfUrl: "https://drive.google.com/file/d/1WVzGB1-ZXB98fc_xScPu2ealB0AI1K4Q/view" },
   ],
   working: [
     { label: "運転資金（人件費）", value: 3432000 },
