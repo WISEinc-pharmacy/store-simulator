@@ -195,11 +195,11 @@ async function createDocument(collectionId, docData, idToken) {
 // --- 越谷 ---
 const koshigayaInvestment = {
   equipment: [
-    { label: "仲介手数料", value: 5500000 },
-    { label: "ユヤマ（分包機+什器一式）", value: 5214000, pdfUrl: "https://drive.google.com/file/d/1jiL5PORCrz6Bhd-l00jneuna_mnnDcSS/view" },
-    { label: "渋谷内装（改修工事）", value: 1858000, pdfUrl: "https://drive.google.com/file/d/1qRl1WXcfVh2lCs1lzlfdHzRgtqVAn0MV/view" },
-    { label: "モイネット（Pharmy Connect+オン資+電子処方箋）", value: 1650000 },
-    { label: "中日販売（什器一式）", value: 2618067, pdfUrl: "https://drive.google.com/file/d/1WVzGB1-ZXB98fc_xScPu2ealB0AI1K4Q/view" },
+    { label: "仲介手数料", value: 5500000, detail: "案件発見者への手数料" },
+    { label: "分包機類", value: 5214000, detail: "ユヤマ Twin-R93V分包機+什器一式（税込）", pdfUrl: "https://drive.google.com/file/d/1jiL5PORCrz6Bhd-l00jneuna_mnnDcSS/view" },
+    { label: "内装費", value: 1858000, detail: "渋谷内装 壁撤去+パーテーション+長尺シート+修繕（税込）", pdfUrl: "https://drive.google.com/file/d/1qRl1WXcfVh2lCs1lzlfdHzRgtqVAn0MV/view" },
+    { label: "レセコン・電子処方箋", value: 1650000, detail: "モイネット Pharmy Connect 2台+オン資+電子処方箋（税込・年間26.4万別途）" },
+    { label: "什器一式", value: 2618067, detail: "中日販売 調剤棚・カウンター・待合ソファ・運搬組立（税抜）", pdfUrl: "https://drive.google.com/file/d/1WVzGB1-ZXB98fc_xScPu2ealB0AI1K4Q/view" },
   ],
   working: [
     { label: "運転資金（人件費）", value: 3432000 },
