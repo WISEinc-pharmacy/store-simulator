@@ -309,6 +309,26 @@
   .milestone.kiyose { background: var(--kiyose); }
   .milestone.critical { background: var(--critical); }
 
+  /* Click-to-edit period */
+  .bar-cell.click-enabled { cursor: pointer; }
+  .bar-cell.selecting {
+    background: rgba(26, 115, 232, 0.15) !important;
+  }
+  .bar-cell.preview {
+    background: rgba(26, 115, 232, 0.10) !important;
+  }
+  .bar-cell.preview-bar {
+    position: relative;
+  }
+  .bar-cell.preview-bar::after {
+    content: '';
+    position: absolute;
+    top: 6px; bottom: 6px; left: 2px; right: 2px;
+    background: rgba(26, 115, 232, 0.25);
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
   /* Summary section */
   .summary {
     padding: 16px 24px;
@@ -808,6 +828,8 @@ var currentVendorFilter = '';
 var saveTimer = null;
 // Track collapsed state per category key (e.g. "k-契約")
 var collapsedCategories = {};
+// Click-to-edit period state
+var clickEditState = { active: false, taskId: null, startWeekIdx: null };
 
 // ============================================================
 // Category labels with 社内/業者 tags
@@ -1098,6 +1120,8 @@ function toggleCategory(catKey) {
 // Render integrated gantt chart with accordion
 // ============================================================
 function renderGantt() {
+  // Cancel any active click-edit selection (DOM is about to be rebuilt)
+  clickEditState = { active: false, taskId: null, startWeekIdx: null };
   var table = document.getElementById('ganttTable');
 
   var now = new Date();
@@ -1216,16 +1240,18 @@ function renderGantt() {
         WEEKS.forEach(function(m) {
           m.weeks.forEach(function(w) {
             var cls = wi === todayWeek ? ' today' : '';
+            var clickAttr = canEdit ? ' onclick="onBarCellClick(\'' + task.id + '\',' + wi + ')" onmouseenter="onBarCellHover(\'' + task.id + '\',' + wi + ')" onmouseleave="onBarCellLeave(\'' + task.id + '\',' + wi + ')"' : '';
+            var editCls = canEdit ? ' click-enabled' : '';
             if (task.status === 'milestone' && wi === task.startWeek) {
-              body += '<td class="bar-cell' + cls + '"><div class="milestone ' + statusClass + '"></div></td>';
+              body += '<td class="bar-cell' + cls + editCls + '"' + clickAttr + '><div class="milestone ' + statusClass + '"></div></td>';
             } else if (wi >= task.startWeek && wi <= task.endWeek) {
               var barStyle = '';
               if (wi === task.startWeek) barStyle += 'border-radius: 3px 0 0 3px;';
               if (wi === task.endWeek) barStyle += 'border-radius: 0 3px 3px 0;';
               if (wi === task.startWeek && wi === task.endWeek) barStyle = 'border-radius: 3px;';
-              body += '<td class="bar-cell' + cls + '"><div class="bar ' + statusClass + '" style="' + barStyle + '"></div></td>';
+              body += '<td class="bar-cell' + cls + editCls + '"' + clickAttr + '><div class="bar ' + statusClass + '" style="' + barStyle + '"></div></td>';
             } else {
-              body += '<td class="' + cls + '"></td>';
+              body += '<td class="bar-cell' + cls + editCls + '"' + clickAttr + '></td>';
             }
             wi++;
           });
@@ -1498,10 +1524,116 @@ document.addEventListener('click', function(e) {
 });
 
 // ============================================================
-// Close modals on Escape key
+// Click-to-edit period on gantt bar cells
+// ============================================================
+function onBarCellClick(taskId, weekIdx) {
+  if (!canEdit) return;
+  var task = tasks.find(function(t) { return t.id === taskId; });
+  if (!task) return;
+
+  if (clickEditState.active && clickEditState.taskId === taskId) {
+    // Second click: set end point and apply
+    var s = Math.min(clickEditState.startWeekIdx, weekIdx);
+    var e = Math.max(clickEditState.startWeekIdx, weekIdx);
+    if (task.status === 'milestone') {
+      // Milestone: only set startWeek (single point)
+      task.startWeek = weekIdx;
+      task.endWeek = weekIdx;
+    } else {
+      task.startWeek = s;
+      task.endWeek = e;
+    }
+    clickEditState = { active: false, taskId: null, startWeekIdx: null };
+    renderGantt();
+    debounceSave();
+  } else {
+    // First click: enter selecting mode
+    clickEditState = { active: true, taskId: taskId, startWeekIdx: weekIdx };
+    applyClickEditHighlight();
+  }
+}
+
+function onBarCellHover(taskId, weekIdx) {
+  if (!clickEditState.active || clickEditState.taskId !== taskId) return;
+  applyClickEditHighlight(weekIdx);
+}
+
+function onBarCellLeave(taskId, weekIdx) {
+  if (!clickEditState.active || clickEditState.taskId !== taskId) return;
+  // Remove preview, keep only the start marker
+  applyClickEditHighlight();
+}
+
+function cancelClickEdit() {
+  if (!clickEditState.active) return;
+  clickEditState = { active: false, taskId: null, startWeekIdx: null };
+  clearClickEditHighlight();
+}
+
+function applyClickEditHighlight(hoverWeekIdx) {
+  clearClickEditHighlight();
+  if (!clickEditState.active) return;
+
+  var taskRow = document.querySelector('tr.task-row[data-task-id="' + clickEditState.taskId + '"]');
+  if (!taskRow) return;
+
+  var barCells = taskRow.querySelectorAll('td.bar-cell');
+  var startIdx = clickEditState.startWeekIdx;
+
+  // Mark the start cell
+  if (barCells[startIdx]) {
+    barCells[startIdx].classList.add('selecting');
+  }
+
+  // If hovering, show preview range
+  if (hoverWeekIdx !== undefined && hoverWeekIdx !== startIdx) {
+    var task = tasks.find(function(t) { return t.id === clickEditState.taskId; });
+    if (task && task.status === 'milestone') {
+      // Milestone: only highlight the hovered cell
+      if (barCells[hoverWeekIdx]) {
+        barCells[hoverWeekIdx].classList.add('preview-bar');
+      }
+    } else {
+      var lo = Math.min(startIdx, hoverWeekIdx);
+      var hi = Math.max(startIdx, hoverWeekIdx);
+      for (var i = lo; i <= hi; i++) {
+        if (barCells[i] && i !== startIdx) {
+          barCells[i].classList.add('preview-bar');
+        }
+      }
+    }
+  }
+}
+
+function clearClickEditHighlight() {
+  document.querySelectorAll('.bar-cell.selecting').forEach(function(el) {
+    el.classList.remove('selecting');
+  });
+  document.querySelectorAll('.bar-cell.preview-bar').forEach(function(el) {
+    el.classList.remove('preview-bar');
+  });
+}
+
+// Cancel click-edit if clicking outside the active task row
+document.addEventListener('click', function(e) {
+  if (!clickEditState.active) return;
+  // Skip if the click was on a bar-cell (handled by onBarCellClick)
+  if (e.target.closest('td.bar-cell')) return;
+  var taskRow = e.target.closest('tr.task-row');
+  if (!taskRow || taskRow.getAttribute('data-task-id') !== clickEditState.taskId) {
+    cancelClickEdit();
+  }
+});
+
+// ============================================================
+// Close modals on Escape key + cancel click-edit
 // ============================================================
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape') {
+    if (clickEditState.active) {
+      cancelClickEdit();
+      return;
+    }
     closeTaskModal();
     closeCategoryModal();
   }
