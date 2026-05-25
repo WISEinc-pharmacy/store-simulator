@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>物件情報一括入力</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>body{font-family:sans-serif;padding:40px;max-width:800px;margin:0 auto;background:#0f172a;color:#f1f5f9}
+button{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;cursor:pointer;margin:8px 4px}
+.login{background:#3b82f6;color:#fff}
+.run{background:#10b981;color:#fff;font-size:1.2rem}
+.run:disabled{background:#334155}
+#log{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-top:20px;white-space:pre-wrap;font-family:monospace;max-height:600px;overflow-y:auto}
+.ok{color:#10b981}.err{color:#ef4444}.info{color:#f59e0b}</style></head>
+<body>
+<h1>物件情報一括入力</h1>
+<button class="login" onclick="doLogin()">Googleでログイン</button>
+<span id="user"></span><br><br>
+<button class="run" id="btn" disabled onclick="run()">物件情報を入力</button>
+<div id="log"></div>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",authDomain:"wise-store-sim.firebaseapp.com",projectId:"wise-store-sim",storageBucket:"wise-store-sim.firebasestorage.app",messagingSenderId:"301306058235",appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"});
+const auth=firebase.auth(),db=firebase.firestore();
+function log(m,c=''){document.getElementById('log').innerHTML+=`<span class="${c}">${m}</span>\n`;}
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());}
+auth.onAuthStateChanged(u=>{if(u){document.getElementById('user').textContent='ログイン: '+u.email;document.getElementById('btn').disabled=false;}});
+
+const PROPERTY_DATA = {
+  '越谷（南越谷）': {
+    name: '文化エステート第2ビル 101号室',
+    address: '埼玉県越谷市南越谷1-17-13',
+    nearestStation: 'JR武蔵野線 南越谷駅 / 東武スカイツリーライン 新越谷駅 徒歩3分',
+    area: '',
+    rent: 440000,
+    commonFee: 0,
+    deposit: 0,
+    contractPeriod: '',
+    managementCompany: '文化エステート（福田正和） TEL:048-985-6134',
+    frontClinic: '心療内科（同一ビル内/至近）、近隣に眼科・内科',
+    expectedRx: 900,
+    note: '仲介手数料550万円（案件発見者への手数料）。売掛金は買掛で相殺、手出しは固定費2ヶ月分。2026年8月開局予定'
+  },
+  '清瀬': {
+    name: 'plaza MAI kiyose 1F',
+    address: '東京都清瀬市松山1-11-20',
+    nearestStation: '西武池袋線 清瀬駅 南口 徒歩3分',
+    area: '',
+    rent: 473000,
+    commonFee: 0,
+    deposit: 0,
+    contractPeriod: '',
+    managementCompany: 'ACRE株式会社（長屋英之） TEL:045-317-5222',
+    frontClinic: '内科・眼科（中間立地）、商店街で面処方も期待',
+    expectedRx: 880,
+    note: 'スケルトン→内装費1,000万円。新築物件・2025年11月竣工済み。2026年9月開局予定'
+  }
+};
+
+async function run(){
+  document.getElementById('btn').disabled=true;
+  document.getElementById('btn').textContent='更新中...';
+  try{
+    const snap=await db.collection('store_simulations').get();
+    log(`${snap.size}件のシミュレーションを検出`,'info');
+    for(const doc of snap.docs){
+      const data=doc.data();
+      const storeName=data.name;
+      const prop=PROPERTY_DATA[storeName];
+      if(!prop){log(`${storeName}: 物件データなし（スキップ）`);continue;}
+
+      log(`${storeName}: 物件情報を更新中...`,'info');
+      await db.collection('store_simulations').doc(doc.id).update({property:prop});
+      log(`${storeName}: OK`,'ok');
+      log(`  住所: ${prop.address}`);
+      log(`  門前: ${prop.frontClinic}`);
+      log(`  賃料: ${prop.rent.toLocaleString()}円/月`);
+      log(`  想定枚数: ${prop.expectedRx}枚/月`);
+    }
+    log('\n=== 完了 ===','ok');
+  }catch(e){log(`ERROR: ${e.message}`,'err');}
+  document.getElementById('btn').textContent='完了';
+}
+</script></body></html>
