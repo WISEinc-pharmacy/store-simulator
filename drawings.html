@@ -242,17 +242,23 @@ function switchStore(store){
 function loadDrawings(){
   db.collection('store_drawings')
     .where('store','==',currentStore)
-    .orderBy('createdAt','desc')
     .get()
     .then(function(snap){
       drawings = [];
       snap.forEach(function(doc){
         drawings.push({id:doc.id, ...doc.data()});
       });
+      // クライアント側でソート（インデックス不要）
+      drawings.sort(function(a,b){
+        var ta = a.createdAt?.toDate ? a.createdAt.toDate().getTime() : 0;
+        var tb = b.createdAt?.toDate ? b.createdAt.toDate().getTime() : 0;
+        return tb - ta;
+      });
       renderCards();
     })
     .catch(function(err){
       console.error('Load error:', err);
+      alert('データ読み込みエラー: ' + err.message);
       drawings = [];
       renderCards();
     });
