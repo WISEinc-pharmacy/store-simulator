@@ -138,8 +138,8 @@ body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg);color:
 
 <div class="container">
   <!-- Add form (admin/editor only) -->
-  <div class="add-form" id="addForm" style="display:none">
-    <h2>+ 図面を登録</h2>
+  <details class="add-form" id="addForm" style="display:none">
+    <summary style="cursor:pointer;font-size:1rem;font-weight:600;color:var(--primary);display:flex;align-items:center;gap:8px;list-style:none">+ 図面を登録</summary>
     <div class="form-grid">
       <div class="form-field">
         <label>図面名 <span style="color:var(--accent-red)">*</span></label>
@@ -167,7 +167,7 @@ body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg);color:
     <div class="form-actions">
       <button class="btn-primary" onclick="addDrawing()">登録</button>
     </div>
-  </div>
+  </details>
 
   <!-- Cards list -->
   <div class="cards-grid" id="cardsList"></div>
