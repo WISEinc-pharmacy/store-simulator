@@ -24,6 +24,7 @@ h1{color:#3b82f6}
   <a href="gantt.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">📅 ガントチャート</a>
   <a href="equipment.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">🔧 備品・機材</a>
   <a href="seed.html" style="padding:10px 20px;color:#fff;text-decoration:none;font-size:13px;font-weight:500;background:rgba(255,255,255,0.2);border-bottom:2px solid #fff">📥 データ投入</a>
+  <a href="drawings.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">📐 図面</a>
 </nav>
 <h1>Store Simulator - Data Seeder</h1>
 <p>越谷（南越谷）と清瀬のデータをFirestoreに投入します。</p>
@@ -118,7 +119,7 @@ function buildMonths(rxFn,hcFn,settings){
 function buildKoshigaya(){
   const inv={
     equipment:[{label:"仲介手数料",value:5500000},{label:"分包機類",value:8000000},{label:"内装費",value:3300000}],
-    working:[{label:"運転資金（人件費）",value:3432000},{label:"運転資金（固定費）",value:365760},{label:"運転資金（売掛金）",value:16817400},{label:"テナント初期費用",value:6204000},{label:"行政申請",value:100000}],
+    working:[{label:"運転資金（人件費）",value:3432000},{label:"運転資金（固定費）",value:365760},{label:"テナント初期費用",value:6204000},{label:"行政申請",value:100000}],
     depreciationMonths:120
   };
 
@@ -136,10 +137,10 @@ function buildKoshigaya(){
 
   function stdHC(m){if(m<6)return 0;if(m>=24)return 50;return Math.round(1+(50-1)*(m-6)/(24-6));}
 
-  // 楽観: 1430枚, 277.2万, 在宅なし
+  // 楽観: 1430枚, 141万, 在宅なし
   const optSettings={costRatio:0.6525,regionalSupport:0,regionalStartMonth:999,rent:440000,otherCostRatio:0.08,
     baseConcentration:100,concentrationDecay:0,
-    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:4},{typeIdx:3,count:1},{typeIdx:5,count:1}],
+    staffOutpatientList:[{typeIdx:0,count:1},{typeIdx:1,count:1},{typeIdx:3,count:1},{typeIdx:5,count:1}],
     staffHomecareList:[]};
 
   return {

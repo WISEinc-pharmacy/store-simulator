@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>図面一覧 | WISE Inc.</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📐</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --primary:#1a73e8;--bg:#f8f9fa;--surface:#fff;--text:#202124;--border:#dadce0;
+  --text-secondary:#5f6368;--accent-green:#34a853;--accent-red:#ea4335;--accent-blue:#4285f4;
+  --koshigaya:#4285f4;--kiyose:#34a853;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+.nav-bar{display:flex;gap:0;background:#1a73e8;padding:0 24px}
+.nav-link{padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500;transition:all 0.2s}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,0.1)}
+.nav-link.active{color:#fff;background:rgba(255,255,255,0.2);border-bottom:2px solid #fff}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.header h1{font-size:1.2rem;color:var(--primary);display:inline}
+.header .subtitle{font-size:0.85rem;color:var(--text-secondary);margin-left:12px}
+.user-info{display:flex;align-items:center;gap:8px;font-size:0.85rem}
+.user-avatar{width:28px;height:28px;border-radius:50%}
+.role-badge{background:rgba(26,115,232,0.1);color:var(--primary);padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600}
+.btn-sm{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;cursor:pointer;color:var(--text-secondary)}
+.btn-sm:hover{background:var(--bg)}
+.login-overlay{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f0fe,#f8f9fa,#ceead6)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.1);max-width:420px;width:90%}
+.login-card h1{font-size:1.4rem;margin-bottom:8px;color:var(--primary)}
+.login-card p{color:var(--text-secondary);margin-bottom:32px;font-size:0.9rem}
+.login-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 32px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer}
+.login-btn:hover{opacity:0.9}
+#main-app{display:none}
+
+/* Store tabs */
+.store-tabs{display:flex;gap:0;padding:0 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.store-tab{padding:10px 24px;border:none;background:transparent;color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;border-bottom:3px solid transparent;transition:all 0.2s}
+.store-tab:hover{color:var(--text);background:#f1f3f4}
+.store-tab.active-k{color:var(--koshigaya);border-bottom-color:var(--koshigaya)}
+.store-tab.active-c{color:var(--kiyose);border-bottom-color:var(--kiyose)}
+
+/* Container */
+.container{max-width:1200px;margin:24px auto;padding:0 24px}
+
+/* Add form */
+.add-form{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-bottom:24px}
+.add-form h2{font-size:1rem;font-weight:600;color:var(--primary);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-field{display:flex;flex-direction:column;gap:4px}
+.form-field.full{grid-column:1/-1}
+.form-field label{font-size:0.8rem;font-weight:500;color:var(--text-secondary)}
+.form-field input,.form-field select,.form-field textarea{padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:0.9rem;font-family:inherit;color:var(--text);background:var(--surface)}
+.form-field input:focus,.form-field select:focus,.form-field textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(26,115,232,0.15)}
+.form-field textarea{resize:vertical;min-height:60px}
+.form-actions{display:flex;justify-content:flex-end;margin-top:16px}
+.btn-primary{padding:8px 24px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:0.9rem;cursor:pointer;font-weight:500;transition:all 0.2s}
+.btn-primary:hover{opacity:0.9}
+.btn-primary:disabled{background:#dadce0;cursor:not-allowed}
+
+/* Cards */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
+.drawing-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:all 0.2s;cursor:pointer}
+.drawing-card:hover{box-shadow:0 4px 12px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.card-header{padding:16px;border-bottom:1px solid var(--border)}
+.card-title{font-size:0.95rem;font-weight:600;color:var(--text);margin-bottom:4px;display:flex;justify-content:space-between;align-items:center}
+.card-meta{display:flex;gap:12px;flex-wrap:wrap;font-size:0.78rem;color:var(--text-secondary)}
+.category-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:0.72rem;font-weight:600;background:#e8f0fe;color:var(--primary)}
+.cat-interior{background:#e8f0fe;color:#1967d2}
+.cat-layout{background:#fef7e0;color:#e37400}
+.cat-equipment{background:#ceead6;color:#0d652d}
+.cat-health{background:#fce8e6;color:#c5221f}
+.cat-other{background:#f0f0f0;color:#5f6368}
+.card-note{padding:8px 16px;font-size:0.82rem;color:var(--text-secondary);border-bottom:1px solid var(--border)}
+.card-preview{display:none;padding:0}
+.card-preview.open{display:block}
+.card-preview iframe{width:100%;height:600px;border:none}
+.card-actions{padding:8px 16px;display:flex;justify-content:space-between;align-items:center}
+.card-link{font-size:0.78rem;color:var(--primary);text-decoration:none}
+.card-link:hover{text-decoration:underline}
+.del-btn{background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:0.85rem;padding:4px 10px;border-radius:4px}
+.del-btn:hover{background:#fce8e6}
+
+.empty-state{text-align:center;padding:48px 24px;color:var(--text-secondary);font-size:0.95rem}
+
+@media(max-width:768px){
+  .form-grid{grid-template-columns:1fr}
+  .cards-grid{grid-template-columns:1fr}
+  .header{flex-direction:column;align-items:flex-start;gap:12px}
+}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-overlay">
+  <div class="login-card">
+    <h1>図面管理</h1>
+    <p>外来プロジェクト</p>
+    <button class="login-btn" onclick="doLogin()">
+      <svg viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Googleでログイン
+    </button>
+  </div>
+</div>
+
+<div id="main-app">
+<nav class="nav-bar">
+  <a href="./" class="nav-link">📊 ダッシュボード</a>
+  <a href="gantt.html" class="nav-link">📅 ガントチャート</a>
+  <a href="equipment.html" class="nav-link">🔧 備品・機材</a>
+  <a href="seed.html" class="nav-link">📥 データ投入</a>
+  <a href="drawings.html" class="nav-link active">📐 図面</a>
+</nav>
+
+<div class="header">
+  <div>
+    <h1>図面管理</h1>
+    <span class="subtitle">越谷 / 清瀬</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="user-info">
+      <img id="user-avatar" class="user-avatar" src="" alt="">
+      <span id="user-name"></span>
+      <span id="role-badge" class="role-badge"></span>
+    </div>
+    <button class="btn-sm" onclick="doLogout()">ログアウト</button>
+  </div>
+</div>
+
+<div class="store-tabs">
+  <button class="store-tab active-k" data-store="k" onclick="switchStore('k')">越谷</button>
+  <button class="store-tab" data-store="c" onclick="switchStore('c')">清瀬</button>
+</div>
+
+<div class="container">
+  <!-- Add form (admin/editor only) -->
+  <div class="add-form" id="addForm" style="display:none">
+    <h2>+ 図面を登録</h2>
+    <div class="form-grid">
+      <div class="form-field">
+        <label>図面名 <span style="color:var(--accent-red)">*</span></label>
+        <input type="text" id="fName" placeholder="例: 内装平面図">
+      </div>
+      <div class="form-field">
+        <label>カテゴリ</label>
+        <select id="fCategory">
+          <option value="内装">内装</option>
+          <option value="配置">配置</option>
+          <option value="設備">設備</option>
+          <option value="保健所">保健所</option>
+          <option value="その他">その他</option>
+        </select>
+      </div>
+      <div class="form-field full">
+        <label>Google Drive URL <span style="color:var(--accent-red)">*</span></label>
+        <input type="url" id="fUrl" placeholder="https://drive.google.com/file/d/.../view">
+      </div>
+      <div class="form-field full">
+        <label>備考</label>
+        <textarea id="fNote" placeholder="メモ..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn-primary" onclick="addDrawing()">登録</button>
+    </div>
+  </div>
+
+  <!-- Cards list -->
+  <div class="cards-grid" id="cardsList"></div>
+  <div class="empty-state" id="emptyState" style="display:none">まだ図面が登録されていません。</div>
+</div>
+</div>
+
+<script>
+// Firebase init
+firebase.initializeApp({
+  apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",
+  authDomain:"wise-store-sim.firebaseapp.com",
+  projectId:"wise-store-sim",
+  storageBucket:"wise-store-sim.firebasestorage.app",
+  messagingSenderId:"301306058235",
+  appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"
+});
+var auth = firebase.auth(), db = firebase.firestore();
+
+var currentUser = null, userRole = 'viewer', canEdit = false;
+var currentStore = 'k';
+var drawings = [];
+
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(err){alert('ログインエラー: '+err.message)});}
+function doLogout(){auth.signOut();}
+
+auth.onAuthStateChanged(async function(user){
+  if(user){
+    currentUser = user;
+    var ud = await db.collection('store_sim_users').doc(user.email).get();
+    if(ud.exists){
+      userRole = ud.data().role || 'viewer';
+    } else {
+      var snap = await db.collection('store_sim_users').limit(1).get();
+      if(snap.empty){
+        await db.collection('store_sim_users').doc(user.email).set({
+          email:user.email, name:user.displayName, role:'admin',
+          createdAt:firebase.firestore.FieldValue.serverTimestamp()
+        });
+        userRole = 'admin';
+      } else {
+        alert('アクセス権がありません。\n利用を希望される方は director@wise-jmco.com へご連絡ください。');
+        auth.signOut();
+        return;
+      }
+    }
+    canEdit = userRole === 'admin' || userRole === 'editor';
+    document.getElementById('login-screen').style.display = 'none';
+    document.getElementById('main-app').style.display = 'block';
+    document.getElementById('user-avatar').src = user.photoURL || '';
+    document.getElementById('user-name').textContent = user.displayName || user.email;
+    document.getElementById('role-badge').textContent = userRole;
+    if(canEdit) document.getElementById('addForm').style.display = 'block';
+    loadDrawings();
+  } else {
+    currentUser = null;
+    document.getElementById('login-screen').style.display = 'flex';
+    document.getElementById('main-app').style.display = 'none';
+  }
+});
+
+// Store switch
+function switchStore(store){
+  currentStore = store;
+  document.querySelectorAll('.store-tab').forEach(function(tab){
+    tab.className = 'store-tab' + (tab.dataset.store === store ? (store === 'k' ? ' active-k' : ' active-c') : '');
+  });
+  loadDrawings();
+}
+
+// Load drawings from Firestore
+function loadDrawings(){
+  db.collection('store_drawings')
+    .where('store','==',currentStore)
+    .orderBy('createdAt','desc')
+    .get()
+    .then(function(snap){
+      drawings = [];
+      snap.forEach(function(doc){
+        drawings.push({id:doc.id, ...doc.data()});
+      });
+      renderCards();
+    })
+    .catch(function(err){
+      console.error('Load error:', err);
+      drawings = [];
+      renderCards();
+    });
+}
+
+// Extract Google Drive file ID from various URL formats
+function extractFileId(url){
+  if(!url) return null;
+  var m;
+  // /file/d/FILE_ID/...
+  m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  // /open?id=FILE_ID
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  // /folders/FILE_ID
+  m = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if(m) return m[1];
+  return null;
+}
+
+function getPreviewUrl(url){
+  var fileId = extractFileId(url);
+  if(!fileId) return null;
+  return 'https://drive.google.com/file/d/' + fileId + '/preview';
+}
+
+function esc(s){
+  var d = document.createElement('div');
+  d.textContent = s || '';
+  return d.innerHTML;
+}
+
+var CATEGORY_CLASSES = {
+  '内装':'cat-interior',
+  '配置':'cat-layout',
+  '設備':'cat-equipment',
+  '保健所':'cat-health',
+  'その他':'cat-other'
+};
+
+function formatDate(ts){
+  if(!ts) return '-';
+  var d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('ja-JP');
+}
+
+function renderCards(){
+  var list = document.getElementById('cardsList');
+  var empty = document.getElementById('emptyState');
+
+  if(drawings.length === 0){
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  var h = '';
+  drawings.forEach(function(d){
+    var catClass = CATEGORY_CLASSES[d.category] || 'cat-other';
+    var previewUrl = getPreviewUrl(d.driveUrl);
+
+    h += '<div class="drawing-card" id="card-' + d.id + '">';
+    h += '<div class="card-header" onclick="togglePreview(\'' + d.id + '\')">';
+    h += '<div class="card-title"><span>' + esc(d.name) + '</span><span class="category-badge ' + catClass + '">' + esc(d.category) + '</span></div>';
+    h += '<div class="card-meta">';
+    h += '<span>' + formatDate(d.createdAt) + '</span>';
+    if(d.createdBy) h += '<span>' + esc(d.createdBy) + '</span>';
+    h += '</div>';
+    h += '</div>';
+    if(d.note){
+      h += '<div class="card-note">' + esc(d.note) + '</div>';
+    }
+    if(previewUrl){
+      h += '<div class="card-preview" id="preview-' + d.id + '">';
+      h += '<iframe data-src="' + esc(previewUrl) + '" allowfullscreen></iframe>';
+      h += '</div>';
+    }
+    h += '<div class="card-actions">';
+    h += '<a class="card-link" href="' + esc(d.driveUrl) + '" target="_blank" onclick="event.stopPropagation()">Google Drive で開く ↗</a>';
+    if(canEdit){
+      h += '<button class="del-btn" onclick="event.stopPropagation(); deleteDrawing(\'' + d.id + '\',\'' + esc(d.name).replace(/'/g,"\\'") + '\')">&times; 削除</button>';
+    }
+    h += '</div>';
+    h += '</div>';
+  });
+  list.innerHTML = h;
+}
+
+function togglePreview(id){
+  var el = document.getElementById('preview-' + id);
+  if(!el) return;
+  var isOpen = el.classList.contains('open');
+  // Close all other previews
+  document.querySelectorAll('.card-preview.open').forEach(function(p){
+    p.classList.remove('open');
+  });
+  if(!isOpen){
+    el.classList.add('open');
+    // Lazy-load iframe src
+    var iframe = el.querySelector('iframe');
+    if(iframe && !iframe.src && iframe.dataset.src){
+      iframe.src = iframe.dataset.src;
+    }
+  }
+}
+
+// Add drawing
+function addDrawing(){
+  var name = document.getElementById('fName').value.trim();
+  var category = document.getElementById('fCategory').value;
+  var url = document.getElementById('fUrl').value.trim();
+  var note = document.getElementById('fNote').value.trim();
+
+  if(!name){ alert('図面名を入力してください。'); return; }
+  if(!url){ alert('Google Drive URLを入力してください。'); return; }
+  if(!extractFileId(url)){ alert('Google DriveのURL形式が正しくありません。'); return; }
+
+  db.collection('store_drawings').add({
+    store: currentStore,
+    name: name,
+    category: category,
+    driveUrl: url,
+    note: note,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    createdBy: currentUser.email
+  }).then(function(){
+    document.getElementById('fName').value = '';
+    document.getElementById('fUrl').value = '';
+    document.getElementById('fNote').value = '';
+    loadDrawings();
+  }).catch(function(err){
+    alert('保存エラー: ' + err.message);
+  });
+}
+
+// Delete drawing
+function deleteDrawing(id, name){
+  if(!confirm('「' + name + '」を削除しますか？')) return;
+  db.collection('store_drawings').doc(id).delete().then(function(){
+    loadDrawings();
+  }).catch(function(err){
+    alert('削除エラー: ' + err.message);
+  });
+}
+</script>
+</body>
+</html>
