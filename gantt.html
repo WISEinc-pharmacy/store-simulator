@@ -185,7 +185,8 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 8px;
-    overflow: hidden;
+    overflow: auto;
+    max-height: calc(100vh - 200px);
   }
 
   .gantt-table {
@@ -201,6 +202,11 @@
     font-size: 12px;
   }
 
+  .gantt-table thead {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
   .month-header th {
     background: #e8eaed;
     padding: 6px 4px;
@@ -1262,7 +1268,7 @@ function renderGantt() {
     }
   });
 
-  table.innerHTML = monthRow + weekRow + body;
+  table.innerHTML = '<thead>' + monthRow + weekRow + '</thead><tbody>' + body + '</tbody>';
 }
 
 // ============================================================
