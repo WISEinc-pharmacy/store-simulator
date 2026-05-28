@@ -1039,6 +1039,7 @@ async function saveTasks(silent) {
   } catch (e) {
     console.error('Save error:', e);
     if (!silent) showSaveIndicator('error');
+    alert('保存エラー: ' + e.message);
   }
 }
 
@@ -1552,7 +1553,7 @@ function onBarCellClick(taskId, weekIdx) {
     }
     clickEditState = { active: false, taskId: null, startWeekIdx: null };
     renderGantt();
-    debounceSave();
+    saveTasks(false);
   } else {
     // First click: enter selecting mode
     clickEditState = { active: true, taskId: taskId, startWeekIdx: weekIdx };
