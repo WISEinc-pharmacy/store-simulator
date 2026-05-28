@@ -191,7 +191,7 @@
 
   .gantt-table {
     width: 100%;
-    min-width: 1400px;
+    min-width: 1200px;
     border-collapse: collapse;
   }
 
@@ -255,36 +255,43 @@
   }
   .task-row td.td-name {
     text-align: left;
-    padding: 4px 8px 4px 28px;
+    padding: 4px 6px 4px 24px;
     white-space: nowrap;
     font-size: 12px;
-    min-width: 200px;
+    min-width: 160px;
+    max-width: 200px;
     background: var(--surface);
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .task-row td.td-who {
-    min-width: 80px;
+    min-width: 50px;
+    max-width: 60px;
     font-size: 11px;
     color: var(--text-secondary);
     background: var(--surface);
-    padding: 2px 4px;
+    padding: 2px 2px;
   }
   .task-row td.td-vendor {
-    min-width: 80px;
+    min-width: 50px;
+    max-width: 60px;
     font-size: 11px;
     color: #1967d2;
     background: var(--surface);
-    padding: 2px 4px;
+    padding: 2px 2px;
     font-weight: 500;
   }
   .task-row td.td-status {
-    min-width: 90px;
+    min-width: 70px;
+    max-width: 80px;
     background: var(--surface);
-    padding: 2px 4px;
+    padding: 2px 2px;
   }
   .task-row td.td-note {
-    min-width: 120px;
+    min-width: 80px;
+    max-width: 100px;
     background: var(--surface);
-    padding: 2px 4px;
+    padding: 2px 2px;
   }
 
   .bar-cell { position: relative; }
@@ -1142,11 +1149,11 @@ function renderGantt() {
 
   // Month header row
   var monthRow = '<tr class="month-header">';
-  monthRow += '<th style="min-width:200px">タスク名</th>';
-  monthRow += '<th style="min-width:80px">社内担当</th>';
-  monthRow += '<th style="min-width:80px">業者</th>';
-  monthRow += '<th style="min-width:90px">ステータス</th>';
-  monthRow += '<th style="min-width:120px">備考</th>';
+  monthRow += '<th style="min-width:160px;max-width:200px">タスク名</th>';
+  monthRow += '<th style="min-width:50px;max-width:60px">担当</th>';
+  monthRow += '<th style="min-width:50px;max-width:60px">業者</th>';
+  monthRow += '<th style="min-width:70px;max-width:80px">状態</th>';
+  monthRow += '<th style="min-width:80px;max-width:100px">備考</th>';
   WEEKS.forEach(function(m) {
     monthRow += '<th colspan="' + m.weeks.length + '">' + m.month + '</th>';
   });
