@@ -885,6 +885,9 @@ var WEEKS = [
   { month: '6月', weeks: ['W1','W2','W3','W4'] },
   { month: '7月', weeks: ['W1','W2','W3','W4'] },
   { month: '8月', weeks: ['W1','W2','W3','W4'] },
+  { month: '9月', weeks: ['W1','W2','W3','W4'] },
+  { month: '10月', weeks: ['W1','W2','W3','W4'] },
+  { month: '11月', weeks: ['W1','W2','W3','W4'] },
 ];
 
 var WEEK_LABELS = [];
@@ -903,7 +906,7 @@ var STATUS_MAP = {
 };
 
 var STORE_LABELS = { k: '越谷', c: '清瀬' };
-var CATEGORY_ORDER = ['契約','内装','設備','許認可','採用','オープン準備'];
+var CATEGORY_ORDER = ['契約','内装','設備','許認可','採用','オープン準備','開業後'];
 
 // Track custom categories added by user (not in CATEGORY_ORDER)
 var customCategories = [];  // will be populated from tasks data
@@ -962,30 +965,47 @@ function getDefaultTasks() {
     t('テナント契約締結','山内/山口','ACRE長屋','c','契約',2,4,'todo'),
     t('押印','山口','','c','契約',3,4,'todo'),
     t('初期費用払込','山口','','c','契約',4,5,'todo'),
-    // 清瀬 内装
+    // 清瀬 内装（スケルトンから・10月オープン）
     t('現地打ち合わせ','山内','渋谷内装','c','内装',0,0,'done'),
-    t('図面確定・見積','山内','渋谷内装','c','内装',0,3,'progress'),
-    t('内装施工（スケルトン）','','渋谷内装','c','内装',4,10,'todo'),
-    t('消防確認','','渋谷内装','c','内装',9,10,'todo'),
+    t('図面確定・見積','山内','渋谷内装','c','内装',0,5,'progress'),
+    t('内装施工（スケルトン）','','渋谷内装','c','内装',5,20,'todo'),
+    t('空調工事','','渋谷内装','c','内装',14,18,'todo'),
+    t('水場設置確認','','渋谷内装','c','内装',18,20,'todo'),
+    t('消防確認','','渋谷内装','c','内装',19,20,'todo'),
     // 清瀬 設備
-    t('レセコン見積・発注','取締役C/管理部A','モイネット','c','設備',1,3,'critical'),
-    t('調剤機器見積・発注','取締役C/管理部A','ユヤマ根木','c','設備',1,3,'critical'),
-    t('レセコン納品・設置','管理部A','モイネット','c','設備',10,12,'todo'),
-    t('調剤機器納品・設置','管理部A','ユヤマ根木','c','設備',11,12,'todo'),
-    t('Musubi・オン資セットアップ','管理部A','KAKEHASHI','c','設備',12,13,'todo'),
+    t('レセコン見積・発注','取締役C/管理部A','モイネット','c','設備',1,5,'critical'),
+    t('調剤機器見積・発注','取締役C/管理部A','ユヤマ根木','c','設備',1,5,'critical'),
+    t('什器見積・発注','取締役C/管理部A','中日販売','c','設備',3,7,'todo'),
+    t('レセコン納品・設置','管理部A','モイネット','c','設備',20,22,'todo'),
+    t('調剤機器納品・設置','管理部A','ユヤマ根木','c','設備',21,22,'todo'),
+    t('什器納品・設置','管理部A','中日販売','c','設備',20,22,'todo'),
+    t('Musubi・オン資セットアップ','管理部A','KAKEHASHI','c','設備',22,23,'todo'),
+    t('セキュリティ設置','管理部A','','c','設備',21,23,'todo'),
     // 清瀬 許認可
-    t('管理薬剤師確定','山内','','c','許認可',0,6,'todo'),
-    t('保健所事前相談','薬剤師B/管理部A','多摩小平保健所','c','許認可',4,5,'todo'),
-    t('保健所検査','薬剤師B','多摩小平保健所','c','許認可',10,11,'todo'),
-    t('厚生局指定申請','薬剤師B','関東信越厚生局','c','許認可',11,13,'todo'),
-    t('公費申請','薬剤師B','','c','許認可',5,12,'todo'),
+    t('管理薬剤師確定','山内','','c','許認可',0,8,'todo'),
+    t('保健所事前相談','薬剤師B/管理部A','多摩小平保健所','c','許認可',5,7,'todo'),
+    t('保健所検査','薬剤師B','多摩小平保健所','c','許認可',20,21,'todo'),
+    t('厚生局指定申請','薬剤師B','関東信越厚生局','c','許認可',21,24,'todo'),
+    t('公費申請（自立支援等）','薬剤師B','','c','許認可',7,23,'todo'),
     // 清瀬 採用
     t('リーダー 面接','山内','','c','採用',0,2,'progress'),
-    t('追加スタッフ採用','薬剤師B','','c','採用',3,12,'todo'),
+    t('追加スタッフ採用','薬剤師B','','c','採用',3,20,'todo'),
     // 清瀬 オープン準備
-    t('リーダー越谷で研修','リーダー','','c','オープン準備',9,13,'todo'),
-    t('医薬品初期発注','管理薬剤師','','c','オープン準備',12,13,'todo'),
-    t('★ 清瀬オープン','','c','オープン準備',13,13,'milestone')
+    t('リーダー越谷で研修','リーダー','','c','オープン準備',13,20,'todo'),
+    t('医薬品初期発注','管理薬剤師','','c','オープン準備',22,24,'todo'),
+    t('オペレーション確認・リハーサル','リーダー','','c','オープン準備',23,24,'todo'),
+    t('★ 清瀬オープン','','','c','オープン準備',24,24,'milestone'),
+    // 清瀬 開業後
+    t('初月運営サポート','山内/リーダー','','c','開業後',24,28,'todo'),
+    t('レセプト請求（初回）','管理薬剤師','','c','開業後',24,25,'todo'),
+    t('厚生局指定確認・追加届出','薬剤師B','関東信越厚生局','c','開業後',24,26,'todo'),
+    t('公費申請フォローアップ','薬剤師B','','c','開業後',24,28,'todo'),
+    t('オペレーション改善','リーダー','','c','開業後',25,28,'todo'),
+    // 越谷 開業後
+    t('初月運営サポート','山内/管薬','','k','開業後',13,16,'todo'),
+    t('レセプト請求（初回）','管理薬剤師','','k','開業後',13,14,'todo'),
+    t('厚生局指定確認・追加届出','薬剤師B','関東信越厚生局','k','開業後',13,15,'todo'),
+    t('オペレーション改善','管理薬剤師','','k','開業後',14,16,'todo')
   ];
 }
 
@@ -1041,6 +1061,20 @@ async function loadTasks() {
     var doc = await db.collection(TASKS_COLLECTION).doc(TASKS_DOC).get();
     if (doc.exists && doc.data().tasks && doc.data().tasks.length > 0) {
       tasks = doc.data().tasks;
+      // Migration: Kiyose 10月 opening + post-opening tasks (v2)
+      if (!doc.data().migrated_v2) {
+        var migrated = migrateKiyoseOct(tasks);
+        if (migrated) {
+          tasks = migrated;
+          await db.collection(TASKS_COLLECTION).doc(TASKS_DOC).set({
+            tasks: tasks,
+            migrated_v2: true,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedBy: currentUser ? currentUser.email : ''
+          });
+          console.log('Migration v2 applied: Kiyose Oct + post-opening');
+        }
+      }
     } else {
       tasks = getDefaultTasks();
       await saveTasks(true);
@@ -1050,6 +1084,86 @@ async function loadTasks() {
     tasks = getDefaultTasks();
   }
   renderAll();
+}
+
+function migrateKiyoseOct(taskList) {
+  var changed = false;
+
+  // 1. Update Kiyose week numbers for 10月 opening
+  var weekUpdates = {
+    '図面確定・見積': { end: 5 },
+    '内装施工（スケルトン）': { start: 5, end: 20 },
+    '消防確認': { start: 19, end: 20 },
+    'レセコン見積・発注': { end: 5 },
+    '調剤機器見積・発注': { end: 5 },
+    'レセコン納品・設置': { start: 20, end: 22 },
+    '調剤機器納品・設置': { start: 21, end: 22 },
+    'Musubi・オン資セットアップ': { start: 22, end: 23 },
+    '管理薬剤師確定': { end: 8 },
+    '保健所事前相談': { start: 5, end: 7 },
+    '保健所検査': { start: 20, end: 21 },
+    '厚生局指定申請': { start: 21, end: 24 },
+    '公費申請': { start: 7, end: 23 },
+    '追加スタッフ採用': { end: 20 },
+    'リーダー越谷で研修': { start: 13, end: 20 },
+    '医薬品初期発注': { start: 22, end: 24 },
+    '★ 清瀬オープン': { start: 24, end: 24 }
+  };
+
+  taskList.forEach(function(t) {
+    if (t.store !== 'c') return;
+    var upd = weekUpdates[t.name];
+    if (!upd) return;
+    if (upd.start !== undefined && t.startWeek !== upd.start) { t.startWeek = upd.start; changed = true; }
+    if (upd.end !== undefined && t.endWeek !== upd.end) { t.endWeek = upd.end; changed = true; }
+  });
+
+  // Rename 公費申請 → 公費申請（自立支援等）
+  taskList.forEach(function(t) {
+    if (t.store === 'c' && t.name === '公費申請') { t.name = '公費申請（自立支援等）'; changed = true; }
+  });
+
+  // 2. Add missing tasks
+  function exists(name, store) { return taskList.some(function(t) { return t.name === name && t.store === store; }); }
+  var idx = 200;
+  function mkId(store, cat) { idx++; return store + '-' + cat + '-mig-' + idx; }
+  function nt(store, cat, name, who, vendor, s, e) {
+    return { id: mkId(store, cat), name: name, who: who, vendor: vendor, store: store, category: cat, startWeek: s, endWeek: e, status: 'todo', note: '' };
+  }
+
+  var newTasks = [];
+  // Kiyose new
+  if (!exists('空調工事', 'c')) newTasks.push(nt('c','内装','空調工事','','渋谷内装',14,18));
+  if (!exists('水場設置確認', 'c')) newTasks.push(nt('c','内装','水場設置確認','','渋谷内装',18,20));
+  if (!exists('什器見積・発注', 'c')) newTasks.push(nt('c','設備','什器見積・発注','取締役C/管理部A','中日販売',3,7));
+  if (!exists('什器納品・設置', 'c')) newTasks.push(nt('c','設備','什器納品・設置','管理部A','中日販売',20,22));
+  if (!exists('セキュリティ設置', 'c')) newTasks.push(nt('c','設備','セキュリティ設置','管理部A','',21,23));
+  if (!exists('オペレーション確認・リハーサル', 'c')) newTasks.push(nt('c','オープン準備','オペレーション確認・リハーサル','リーダー','',23,24));
+  // Kiyose post-opening
+  if (!exists('初月運営サポート', 'c')) newTasks.push(nt('c','開業後','初月運営サポート','山内/リーダー','',24,28));
+  if (!exists('レセプト請求（初回）', 'c')) newTasks.push(nt('c','開業後','レセプト請求（初回）','管理薬剤師','',24,25));
+  if (!exists('厚生局指定確認・追加届出', 'c')) newTasks.push(nt('c','開業後','厚生局指定確認・追加届出','薬剤師B','関東信越厚生局',24,26));
+  if (!exists('公費申請フォローアップ', 'c')) newTasks.push(nt('c','開業後','公費申請フォローアップ','薬剤師B','',24,28));
+  if (!exists('オペレーション改善', 'c')) newTasks.push(nt('c','開業後','オペレーション改善','リーダー','',25,28));
+  // Koshigaya post-opening
+  if (!exists('初月運営サポート', 'k')) newTasks.push(nt('k','開業後','初月運営サポート','山内/管薬','',13,16));
+  if (!exists('レセプト請求（初回）', 'k')) newTasks.push(nt('k','開業後','レセプト請求（初回）','管理薬剤師','',13,14));
+  if (!exists('厚生局指定確認・追加届出', 'k')) newTasks.push(nt('k','開業後','厚生局指定確認・追加届出','薬剤師B','関東信越厚生局',13,15));
+  if (!exists('オペレーション改善', 'k')) newTasks.push(nt('k','開業後','オペレーション改善','管理薬剤師','',14,16));
+
+  if (newTasks.length > 0) changed = true;
+
+  // Insert after same store+category
+  newTasks.forEach(function(n) {
+    var lastIdx = -1;
+    for (var i = 0; i < taskList.length; i++) {
+      if (taskList[i].store === n.store && taskList[i].category === n.category) lastIdx = i;
+    }
+    if (lastIdx >= 0) taskList.splice(lastIdx + 1, 0, n);
+    else taskList.push(n);
+  });
+
+  return changed ? taskList : null;
 }
 
 async function saveTasks(silent) {
