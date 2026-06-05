@@ -222,6 +222,7 @@
   }
 
   .today { background: #fff3e0 !important; }
+  .month-start { border-left: 2px solid #9aa0a6 !important; }
 
   .category-row td {
     background: #e8f0fe;
@@ -1297,8 +1298,11 @@ function renderGantt() {
   var weekRow = '<tr class="week-header"><th></th><th></th><th></th><th></th><th></th>';
   var weekIdx = 0;
   WEEKS.forEach(function(m) {
-    m.weeks.forEach(function(w) {
-      var cls = weekIdx === todayWeek ? ' class="today"' : '';
+    m.weeks.forEach(function(w, wi) {
+      var classes = [];
+      if (weekIdx === todayWeek) classes.push('today');
+      if (wi === 0) classes.push('month-start');
+      var cls = classes.length ? ' class="' + classes.join(' ') + '"' : '';
       weekRow += '<th' + cls + '>' + w + '</th>';
       weekIdx++;
     });
@@ -1387,20 +1391,23 @@ function renderGantt() {
         // Gantt bars
         var wi = 0;
         WEEKS.forEach(function(m) {
-          m.weeks.forEach(function(w) {
-            var cls = wi === todayWeek ? ' today' : '';
+          m.weeks.forEach(function(w, wIdx) {
+            var classes = ['bar-cell'];
+            if (wi === todayWeek) classes.push('today');
+            if (wIdx === 0) classes.push('month-start');
+            if (canEdit) classes.push('click-enabled');
+            var cls = ' class="' + classes.join(' ') + '"';
             var clickAttr = canEdit ? ' onclick="onBarCellClick(\'' + task.id + '\',' + wi + ')" onmouseenter="onBarCellHover(\'' + task.id + '\',' + wi + ')" onmouseleave="onBarCellLeave(\'' + task.id + '\',' + wi + ')"' : '';
-            var editCls = canEdit ? ' click-enabled' : '';
             if (task.status === 'milestone' && wi === task.startWeek) {
-              body += '<td class="bar-cell' + cls + editCls + '"' + clickAttr + '><div class="milestone ' + statusClass + '"></div></td>';
+              body += '<td' + cls + clickAttr + '><div class="milestone ' + statusClass + '"></div></td>';
             } else if (wi >= task.startWeek && wi <= task.endWeek) {
               var barStyle = '';
               if (wi === task.startWeek) barStyle += 'border-radius: 3px 0 0 3px;';
               if (wi === task.endWeek) barStyle += 'border-radius: 0 3px 3px 0;';
               if (wi === task.startWeek && wi === task.endWeek) barStyle = 'border-radius: 3px;';
-              body += '<td class="bar-cell' + cls + editCls + '"' + clickAttr + '><div class="bar ' + statusClass + '" style="' + barStyle + '"></div></td>';
+              body += '<td' + cls + clickAttr + '><div class="bar ' + statusClass + '" style="' + barStyle + '"></div></td>';
             } else {
-              body += '<td class="bar-cell' + cls + editCls + '"' + clickAttr + '></td>';
+              body += '<td' + cls + clickAttr + '></td>';
             }
             wi++;
           });
