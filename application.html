@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>申請情報 | WISE Inc.</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🅦</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --primary:#1a73e8;--bg:#f8f9fa;--surface:#fff;--text:#202124;--border:#dadce0;
+  --text-secondary:#5f6368;--accent-green:#34a853;--accent-red:#ea4335;--accent-blue:#4285f4;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+.nav-bar{display:flex;gap:0;background:#1a73e8;padding:0 24px}
+.nav-link{padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500;transition:all 0.2s}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,0.1)}
+.nav-link.active{color:#fff;background:rgba(255,255,255,0.2);border-bottom:2px solid #fff}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.header h1{font-size:1.2rem;color:var(--primary)}
+.user-info{display:flex;align-items:center;gap:8px;font-size:0.85rem}
+.user-avatar{width:28px;height:28px;border-radius:50%}
+.role-badge{background:rgba(26,115,232,0.1);color:var(--primary);padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600}
+.btn-sm{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;cursor:pointer;color:var(--text-secondary)}
+.btn-sm:hover{background:var(--bg)}
+.container{max-width:1000px;margin:24px auto;padding:0 24px}
+
+/* Store tabs */
+.store-tabs{display:flex;gap:0;background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px}
+.store-tab{padding:10px 24px;cursor:pointer;font-size:0.9rem;font-weight:600;color:var(--text-secondary);border-bottom:3px solid transparent;transition:all 0.2s}
+.store-tab:hover{color:var(--text);background:#f1f5fd}
+.store-tab.active-k{color:#1a73e8;border-bottom-color:#1a73e8}
+.store-tab.active-c{color:#34a853;border-bottom-color:#34a853}
+
+/* Form sections */
+.section{background:var(--surface);border-radius:12px;border:1px solid var(--border);padding:24px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.05)}
+.section-title{font-size:1rem;font-weight:700;color:var(--primary);margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--primary)}
+.form-grid{display:grid;grid-template-columns:200px 1fr;gap:12px 16px;align-items:center}
+.form-label{font-size:0.85rem;font-weight:600;color:var(--text-secondary)}
+.form-input{border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:0.85rem;font-family:inherit;color:var(--text);background:#fff}
+.form-input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 2px rgba(26,115,232,0.1)}
+.form-input:read-only{background:var(--bg);color:var(--text-secondary)}
+.form-select{border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:0.85rem;font-family:inherit;color:var(--text);background:#fff;cursor:pointer}
+.form-select:focus{outline:none;border-color:var(--primary)}
+
+/* Staff table */
+.staff-table{width:100%;border-collapse:collapse;font-size:0.85rem;background:var(--surface);margin-top:8px}
+.staff-table th{background:#e8f0fe;padding:8px 12px;text-align:left;font-weight:600;border-bottom:1px solid var(--border)}
+.staff-table td{padding:8px 12px;border-bottom:1px solid var(--border)}
+.staff-table input,.staff-table select{border:1px solid transparent;background:transparent;padding:4px 6px;border-radius:4px;font-size:0.85rem;width:100%;font-family:inherit;color:var(--text)}
+.staff-table input:hover,.staff-table select:hover{border-color:var(--border)}
+.staff-table input:focus,.staff-table select:focus{outline:none;border-color:var(--primary);background:#fff}
+.add-row-btn{margin-top:8px;padding:6px 16px;background:transparent;border:1px dashed var(--border);border-radius:6px;font-size:0.8rem;cursor:pointer;color:var(--text-secondary)}
+.add-row-btn:hover{border-color:var(--primary);color:var(--primary)}
+.del-btn{background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:0.9rem;padding:2px 6px}
+.del-btn:hover{background:#fce8e6;border-radius:4px}
+
+/* Completion indicator */
+.completion{display:flex;align-items:center;gap:8px;margin-bottom:16px;font-size:0.85rem;color:var(--text-secondary)}
+.completion-bar{flex:1;height:8px;background:#e0e0e0;border-radius:4px;overflow:hidden}
+.completion-fill{height:100%;border-radius:4px;transition:width 0.3s}
+
+.login-overlay{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f0fe,#f8f9fa,#ceead6)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.1);max-width:420px;width:90%}
+.login-card h1{font-size:1.4rem;margin-bottom:8px;color:var(--primary)}
+.login-card p{color:var(--text-secondary);margin-bottom:32px;font-size:0.9rem}
+.login-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 32px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer}
+.login-btn:hover{opacity:0.9}
+#main-app{display:none}
+.save-indicator{position:fixed;top:12px;right:12px;padding:6px 14px;border-radius:6px;font-size:0.8rem;font-weight:600;z-index:999;opacity:0;transition:opacity 0.3s}
+.save-indicator.show{opacity:1}
+.save-indicator.saving{background:#fff3cd;color:#856404}
+.save-indicator.saved{background:#d4edda;color:#155724}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-overlay">
+  <div class="login-card">
+    <h1>📋 申請情報</h1>
+    <p>外来プロジェクト 保健所申請</p>
+    <button class="login-btn" onclick="doLogin()">
+      <svg viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Googleでログイン
+    </button>
+  </div>
+</div>
+
+<div id="main-app">
+<nav class="nav-bar">
+  <a href="./" class="nav-link">📊 ダッシュボード</a>
+  <a href="gantt.html" class="nav-link">📅 ガントチャート</a>
+  <a href="equipment.html" class="nav-link">🔧 備品・機材</a>
+  <a href="seed.html" class="nav-link">📥 データ投入</a>
+  <a href="drawings.html" class="nav-link">📐 図面</a>
+  <a href="application.html" class="nav-link active">📋 申請情報</a>
+</nav>
+
+<div class="header">
+  <div><h1 style="display:inline">📋 保健所 開設許可申請</h1></div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="user-info">
+      <img id="user-avatar" class="user-avatar" src="" alt="">
+      <span id="user-name"></span>
+      <span id="role-badge" class="role-badge"></span>
+    </div>
+    <button class="btn-sm" onclick="doLogout()">ログアウト</button>
+  </div>
+</div>
+
+<!-- Store tabs -->
+<div class="store-tabs" id="storeTabs"></div>
+
+<div id="save-indicator" class="save-indicator"></div>
+
+<div class="container" id="content"></div>
+</div>
+
+<script>
+firebase.initializeApp({apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",authDomain:"wise-store-sim.firebaseapp.com",projectId:"wise-store-sim",storageBucket:"wise-store-sim.firebasestorage.app",messagingSenderId:"301306058235",appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"});
+var auth=firebase.auth(),db=firebase.firestore();
+var currentUser=null,canEdit=false;
+var COLLECTION='store_simulations';
+var DOC_PREFIX='application_';
+var currentStore='k';
+var appData={};
+
+var STORES=[
+  {id:'k',name:'越谷（南越谷）',color:'#1a73e8'},
+  {id:'c',name:'清瀬',color:'#34a853'}
+];
+
+function defaultData(){
+  return {
+    structure:{
+      dispensingRoom:{area:'',floorType:'',ceilingType:''},
+    },
+    staffList:[
+      {name:'',role:'管理薬剤師',workDays:'',workHours:'',workType:'常勤'}
+    ],
+    operation:{
+      avgPrescriptions:'',pharmacistCount:'',
+    },
+    permit:{
+      desiredDate:'',
+      pharmacistAbsence:'なし',
+      pharmacistAbsenceDetail:''
+    },
+    notes:''
+  };
+}
+
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(function(e){alert('ログインエラー: '+e.message)})}
+function doLogout(){auth.signOut()}
+
+auth.onAuthStateChanged(async function(user){
+  if(user){
+    currentUser=user;
+    var ud=await db.collection('store_sim_users').doc(user.email).get();
+    if(ud.exists){var role=ud.data().role||'viewer';canEdit=role==='admin'||role==='editor';}
+    else{var snap=await db.collection('store_sim_users').limit(1).get();if(snap.empty){canEdit=true;}else{alert('アクセス権がありません');auth.signOut();return;}}
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    document.getElementById('user-avatar').src=user.photoURL||'';
+    document.getElementById('user-name').textContent=user.displayName||user.email;
+    document.getElementById('role-badge').textContent=canEdit?'editor':'viewer';
+    renderStoreTabs();
+    await loadData();
+  }else{
+    document.getElementById('login-screen').style.display='flex';
+    document.getElementById('main-app').style.display='none';
+  }
+});
+
+function renderStoreTabs(){
+  var h='';
+  STORES.forEach(function(s){
+    var cls=s.id===currentStore?'store-tab active-'+s.id:'store-tab';
+    h+='<div class="'+cls+'" onclick="switchStore(\''+s.id+'\')">'+s.name+'</div>';
+  });
+  document.getElementById('storeTabs').innerHTML=h;
+}
+
+async function switchStore(id){
+  currentStore=id;
+  renderStoreTabs();
+  await loadData();
+}
+
+async function loadData(){
+  try{
+    var doc=await db.collection(COLLECTION).doc(DOC_PREFIX+currentStore).get();
+    appData=doc.exists?doc.data():defaultData();
+    if(!appData.structure) appData.structure=defaultData().structure;
+    if(!appData.staffList) appData.staffList=defaultData().staffList;
+    if(!appData.operation) appData.operation=defaultData().operation;
+    if(!appData.permit) appData.permit=defaultData().permit;
+  }catch(e){
+    console.error('Load failed:',e);
+    appData=defaultData();
+  }
+  render();
+}
+
+var saveTimer=null;
+function saveDebounced(){
+  if(!canEdit)return;
+  showSave('saving');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async function(){
+    try{
+      await db.collection(COLLECTION).doc(DOC_PREFIX+currentStore).set({
+        ...appData,
+        updatedAt:firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy:currentUser.email
+      });
+      showSave('saved');
+    }catch(e){console.error('Save failed:',e);alert('保存エラー: '+e.message);}
+  },1500);
+}
+
+function showSave(type){
+  var el=document.getElementById('save-indicator');
+  el.className='save-indicator show '+type;
+  el.textContent=type==='saving'?'保存中...':'保存済み ✓';
+  if(type==='saved') setTimeout(function(){el.classList.remove('show')},2000);
+}
+
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+function countFilled(){
+  var total=0,filled=0;
+  var s=appData.structure||{};
+  var dr=s.dispensingRoom||{};
+  // Structure: 3 fields
+  ['area','floorType','ceilingType'].forEach(function(f){total++;if(dr[f])filled++;});
+  // Staff: at least 1 with name
+  total++;
+  if(appData.staffList&&appData.staffList.some(function(st){return st.name;}))filled++;
+  // Operation: 2 fields
+  ['avgPrescriptions','pharmacistCount'].forEach(function(f){total++;if((appData.operation||{})[f])filled++;});
+  // Permit: desired date
+  total++;if((appData.permit||{}).desiredDate)filled++;
+  // Pharmacist absence
+  total++;filled++; // always has a value (default なし)
+  return {total:total,filled:filled};
+}
+
+function render(){
+  var el=document.getElementById('content');
+  var ro=!canEdit;
+  var roAttr=ro?' readonly':'';
+  var s=appData.structure||{};
+  var dr=s.dispensingRoom||{};
+  var op=appData.operation||{};
+  var pm=appData.permit||{};
+  var staff=appData.staffList||[];
+
+  var comp=countFilled();
+  var pct=Math.round(comp.filled/comp.total*100);
+  var barColor=pct===100?'#34a853':pct>=50?'#fbbc04':'#ea4335';
+
+  var h='';
+
+  // Completion bar
+  h+='<div class="completion"><span>入力進捗: '+comp.filled+'/'+comp.total+'</span>';
+  h+='<div class="completion-bar"><div class="completion-fill" style="width:'+pct+'%;background:'+barColor+'"></div></div>';
+  h+='<span style="font-weight:600">'+pct+'%</span></div>';
+
+  // Section 1: 構造設備の概要
+  h+='<div class="section">';
+  h+='<div class="section-title">構造設備の概要</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="form-label">調剤室 面積（内法）</div>';
+  h+='<input class="form-input" value="'+esc(dr.area)+'" placeholder="例: 19.8㎡"'+roAttr+' onchange="updStructure(\'area\',this.value)">';
+  h+='<div class="form-label">床（　）造</div>';
+  h+='<input class="form-input" value="'+esc(dr.floorType)+'" placeholder="例: 長尺シート"'+roAttr+' onchange="updStructure(\'floorType\',this.value)">';
+  h+='<div class="form-label">天井（　）造</div>';
+  h+='<input class="form-input" value="'+esc(dr.ceilingType)+'" placeholder="例: 石膏ボード"'+roAttr+' onchange="updStructure(\'ceilingType\',this.value)">';
+  h+='</div></div>';
+
+  // Section 2: 使用関係証明書（薬剤師一覧）
+  h+='<div class="section">';
+  h+='<div class="section-title">使用関係証明書（管理薬剤師・勤務薬剤師）</div>';
+  h+='<table class="staff-table"><thead><tr>';
+  h+='<th style="width:140px">氏名</th><th style="width:120px">役割</th><th style="width:160px">勤務日</th><th style="width:140px">勤務時間</th><th style="width:100px">勤務形態</th>';
+  if(canEdit) h+='<th style="width:36px"></th>';
+  h+='</tr></thead><tbody>';
+  staff.forEach(function(st,i){
+    if(canEdit){
+      h+='<tr>';
+      h+='<td><input value="'+esc(st.name)+'" placeholder="氏名" onchange="updStaff('+i+',\'name\',this.value)"></td>';
+      h+='<td><select onchange="updStaff('+i+',\'role\',this.value)">';
+      ['管理薬剤師','薬剤師','登録販売者','事務'].forEach(function(r){h+='<option'+(st.role===r?' selected':'')+'>'+r+'</option>';});
+      h+='</select></td>';
+      h+='<td><input value="'+esc(st.workDays)+'" placeholder="例: 月〜土" onchange="updStaff('+i+',\'workDays\',this.value)"></td>';
+      h+='<td><input value="'+esc(st.workHours)+'" placeholder="例: 9:00-18:00" onchange="updStaff('+i+',\'workHours\',this.value)"></td>';
+      h+='<td><select onchange="updStaff('+i+',\'workType\',this.value)">';
+      ['常勤','非常勤','派遣'].forEach(function(t){h+='<option'+(st.workType===t?' selected':'')+'>'+t+'</option>';});
+      h+='</select></td>';
+      h+='<td><button class="del-btn" onclick="delStaff('+i+')">&times;</button></td>';
+      h+='</tr>';
+    }else{
+      h+='<tr><td>'+esc(st.name)+'</td><td>'+esc(st.role)+'</td><td>'+esc(st.workDays)+'</td><td>'+esc(st.workHours)+'</td><td>'+esc(st.workType)+'</td></tr>';
+    }
+  });
+  h+='</tbody></table>';
+  if(canEdit) h+='<button class="add-row-btn" onclick="addStaff()">+ 薬剤師を追加</button>';
+  h+='</div>';
+
+  // Section 3: 調剤体制の概要
+  h+='<div class="section">';
+  h+='<div class="section-title">調剤及び調剤された薬剤又は医薬品の販売若しくは授与を行う体制の概要</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="form-label">1日平均処方箋枚数</div>';
+  h+='<input class="form-input" value="'+esc(op.avgPrescriptions)+'" placeholder="例: 40枚"'+roAttr+' onchange="updOp(\'avgPrescriptions\',this.value)">';
+  h+='<div class="form-label">薬剤師の員数</div>';
+  h+='<input class="form-input" value="'+esc(op.pharmacistCount)+'" placeholder="例: 2名"'+roAttr+' onchange="updOp(\'pharmacistCount\',this.value)">';
+  h+='</div></div>';
+
+  // Section 4: 開設許可申請書
+  h+='<div class="section">';
+  h+='<div class="section-title">開設許可申請書</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="form-label">許可年月日 希望日</div>';
+  h+='<input type="date" class="form-input" value="'+esc(pm.desiredDate)+'"'+(ro?' readonly':'')+' onchange="updPermit(\'desiredDate\',this.value)">';
+  h+='<div class="form-label">薬剤師不在時間</div>';
+  if(canEdit){
+    h+='<select class="form-select" onchange="updPermit(\'pharmacistAbsence\',this.value)">';
+    ['なし','あり'].forEach(function(v){h+='<option'+(pm.pharmacistAbsence===v?' selected':'')+'>'+v+'</option>';});
+    h+='</select>';
+  }else{
+    h+='<span class="form-input" style="display:inline-block">'+esc(pm.pharmacistAbsence||'なし')+'</span>';
+  }
+  if(pm.pharmacistAbsence==='あり'){
+    h+='<div class="form-label">不在時間の詳細</div>';
+    h+='<input class="form-input" value="'+esc(pm.pharmacistAbsenceDetail||'')+'" placeholder="例: 12:00-13:00（昼休憩）"'+roAttr+' onchange="updPermit(\'pharmacistAbsenceDetail\',this.value)">';
+  }
+  h+='</div></div>';
+
+  // Section 5: 備考
+  h+='<div class="section">';
+  h+='<div class="section-title">備考・メモ</div>';
+  if(canEdit){
+    h+='<textarea class="form-input" style="width:100%;min-height:80px;resize:vertical" placeholder="保健所への相談内容、指摘事項、注意点など" onchange="appData.notes=this.value;saveDebounced()">'+esc(appData.notes||'')+'</textarea>';
+  }else{
+    h+='<p style="font-size:0.85rem;color:var(--text-secondary);white-space:pre-wrap">'+(esc(appData.notes)||'（なし）')+'</p>';
+  }
+  h+='</div>';
+
+  el.innerHTML=h;
+}
+
+// Update helpers
+function updStructure(field,val){
+  if(!appData.structure)appData.structure={dispensingRoom:{}};
+  if(!appData.structure.dispensingRoom)appData.structure.dispensingRoom={};
+  appData.structure.dispensingRoom[field]=val;
+  saveDebounced();
+}
+function updStaff(i,field,val){
+  appData.staffList[i][field]=val;
+  saveDebounced();
+}
+function addStaff(){
+  appData.staffList.push({name:'',role:'薬剤師',workDays:'',workHours:'',workType:'常勤'});
+  render();saveDebounced();
+}
+function delStaff(i){
+  if(appData.staffList[i].name&&!confirm('「'+appData.staffList[i].name+'」を削除しますか？'))return;
+  appData.staffList.splice(i,1);
+  if(appData.staffList.length===0)appData.staffList.push({name:'',role:'薬剤師',workDays:'',workHours:'',workType:'常勤'});
+  render();saveDebounced();
+}
+function updOp(field,val){
+  if(!appData.operation)appData.operation={};
+  appData.operation[field]=val;
+  saveDebounced();
+}
+function updPermit(field,val){
+  if(!appData.permit)appData.permit={};
+  appData.permit[field]=val;
+  render();saveDebounced();
+}
+</script>
+</body>
+</html>
