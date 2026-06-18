@@ -204,7 +204,6 @@ const koshigayaInvestment = {
   working: [
     { label: "運転資金（人件費）", value: 3432000 },
     { label: "運転資金（固定費）", value: 365760 },
-    { label: "運転資金（売掛金）", value: 16817400 },
     { label: "テナント初期費用", value: 6204000 },
     { label: "行政申請", value: 100000 },
   ],
@@ -261,10 +260,10 @@ const koshigayaOptimisticSettings = {
   baseConcentration: 100,
   concentrationDecay: 0,
   staffOutpatientList: [
-    { typeIdx: 0, count: 1 },
-    { typeIdx: 1, count: 4 },
-    { typeIdx: 3, count: 1 },
-    { typeIdx: 5, count: 1 },
+    { typeIdx: 0, count: 1 },  // 管理薬剤師 550,000
+    { typeIdx: 1, count: 1 },  // 常勤薬剤師 450,000
+    { typeIdx: 3, count: 1 },  // 一般事務 230,000
+    { typeIdx: 5, count: 1 },  // パート事務 180,000
   ],
   staffHomecareList: [],
 };
