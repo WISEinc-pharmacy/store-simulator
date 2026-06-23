@@ -135,7 +135,18 @@ var STORES=[
 ];
 
 function defaultData(){
+  var auth_defaults = {
+    k: {
+      healthCenter:{name:'越谷市保健所',address:'',phone:'',person:''},
+      bureau:{name:'関東信越厚生局',dept:'',phone:'',person:''}
+    },
+    c: {
+      healthCenter:{name:'多摩小平保健所',address:'',phone:'',person:''},
+      bureau:{name:'関東信越厚生局',dept:'',phone:'',person:''}
+    }
+  };
   return {
+    authorities: auth_defaults[currentStore] || auth_defaults.k,
     structure:{
       dispensingRoom:{area:'',floorType:'',ceilingType:''},
     },
@@ -199,6 +210,9 @@ async function loadData(){
     if(!appData.staffList) appData.staffList=defaultData().staffList;
     if(!appData.operation) appData.operation=defaultData().operation;
     if(!appData.permit) appData.permit=defaultData().permit;
+    if(!appData.authorities) appData.authorities=defaultData().authorities;
+    if(!appData.authorities.healthCenter) appData.authorities.healthCenter=defaultData().authorities.healthCenter;
+    if(!appData.authorities.bureau) appData.authorities.bureau=defaultData().authorities.bureau;
   }catch(e){
     console.error('Load failed:',e);
     appData=defaultData();
@@ -234,6 +248,12 @@ function esc(s){var d=document.createElement('div');d.textContent=s||'';return d
 
 function countFilled(){
   var total=0,filled=0;
+  // Authorities: healthCenter(4) + bureau(4) = 8 fields
+  var au=appData.authorities||{};
+  var hc=au.healthCenter||{};
+  var bu=au.bureau||{};
+  ['name','address','phone','person'].forEach(function(f){total++;if(hc[f])filled++;});
+  ['name','dept','phone','person'].forEach(function(f){total++;if(bu[f])filled++;});
   var s=appData.structure||{};
   var dr=s.dispensingRoom||{};
   // Structure: 3 fields
@@ -265,6 +285,35 @@ function render(){
   var barColor=pct===100?'#34a853':pct>=50?'#fbbc04':'#ea4335';
 
   var h='';
+  var au=appData.authorities||{};
+  var hc=au.healthCenter||{};
+  var bu=au.bureau||{};
+
+  // Section 0: 管轄機関の連絡先
+  h+='<div class="section">';
+  h+='<div class="section-title">管轄機関の連絡先</div>';
+  h+='<div style="font-size:0.85rem;font-weight:600;color:var(--accent-blue);margin-bottom:12px">🏥 保健所</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="form-label">保健所名</div>';
+  h+='<input class="form-input" value="'+esc(hc.name)+'" placeholder="例: 越谷市保健所"'+roAttr+' onchange="updAuth(\'healthCenter\',\'name\',this.value)">';
+  h+='<div class="form-label">住所</div>';
+  h+='<input class="form-input" value="'+esc(hc.address)+'" placeholder=""'+roAttr+' onchange="updAuth(\'healthCenter\',\'address\',this.value)">';
+  h+='<div class="form-label">電話番号</div>';
+  h+='<input class="form-input" value="'+esc(hc.phone)+'" placeholder=""'+roAttr+' onchange="updAuth(\'healthCenter\',\'phone\',this.value)">';
+  h+='<div class="form-label">担当者</div>';
+  h+='<input class="form-input" value="'+esc(hc.person)+'" placeholder=""'+roAttr+' onchange="updAuth(\'healthCenter\',\'person\',this.value)">';
+  h+='</div>';
+  h+='<div style="font-size:0.85rem;font-weight:600;color:var(--accent-blue);margin:20px 0 12px">🏛️ 厚生局</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="form-label">厚生局名</div>';
+  h+='<input class="form-input" value="'+esc(bu.name)+'" placeholder="例: 関東信越厚生局"'+roAttr+' onchange="updAuth(\'bureau\',\'name\',this.value)">';
+  h+='<div class="form-label">担当部署</div>';
+  h+='<input class="form-input" value="'+esc(bu.dept)+'" placeholder=""'+roAttr+' onchange="updAuth(\'bureau\',\'dept\',this.value)">';
+  h+='<div class="form-label">電話番号</div>';
+  h+='<input class="form-input" value="'+esc(bu.phone)+'" placeholder=""'+roAttr+' onchange="updAuth(\'bureau\',\'phone\',this.value)">';
+  h+='<div class="form-label">担当者</div>';
+  h+='<input class="form-input" value="'+esc(bu.person)+'" placeholder=""'+roAttr+' onchange="updAuth(\'bureau\',\'person\',this.value)">';
+  h+='</div></div>';
 
   // Completion bar
   h+='<div class="completion"><span>入力進捗: '+comp.filled+'/'+comp.total+'</span>';
@@ -385,6 +434,12 @@ function updPermit(field,val){
   if(!appData.permit)appData.permit={};
   appData.permit[field]=val;
   render();saveDebounced();
+}
+function updAuth(group,field,val){
+  if(!appData.authorities)appData.authorities={};
+  if(!appData.authorities[group])appData.authorities[group]={};
+  appData.authorities[group][field]=val;
+  saveDebounced();
 }
 </script>
 </body>
