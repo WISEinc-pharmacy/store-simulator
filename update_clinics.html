@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>近隣クリニック情報投入</title>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>body{font-family:sans-serif;padding:40px;max-width:900px;margin:0 auto;background:#0f172a;color:#f1f5f9}
+button{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;cursor:pointer;margin:8px 4px}
+.login{background:#3b82f6;color:#fff}
+.run{background:#10b981;color:#fff;font-size:1.2rem}
+.run:disabled{background:#334155}
+#log{background:#1e293b;border:1px solid #334155;border-radius:8px;padding:16px;margin-top:20px;white-space:pre-wrap;font-family:monospace;max-height:600px;overflow-y:auto}
+.ok{color:#10b981}.err{color:#ef4444}.info{color:#f59e0b}</style></head>
+<body>
+<h1>近隣クリニック情報 一括投入</h1>
+<p>越谷・清瀬の近隣クリニック・競合薬局の情報をFirestoreに投入します。</p>
+<button class="login" onclick="doLogin()">Googleでログイン</button>
+<span id="user"></span><br><br>
+<button class="run" id="btn" disabled onclick="run()">クリニック情報を投入</button>
+<div id="log"></div>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",authDomain:"wise-store-sim.firebaseapp.com",projectId:"wise-store-sim",storageBucket:"wise-store-sim.firebasestorage.app",messagingSenderId:"301306058235",appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"});
+const auth=firebase.auth(),db=firebase.firestore();
+function log(m,c=''){document.getElementById('log').innerHTML+=`<span class="${c}">${m}</span>\n`;}
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());}
+auth.onAuthStateChanged(u=>{if(u){document.getElementById('user').textContent='ログイン: '+u.email;document.getElementById('btn').disabled=false;}});
+
+const CLINICS = {
+  k: [
+    {
+      name: '越谷心療内科さくらメンタルクリニック',
+      dept: '心療内科',
+      directorName: '（東大出身・グループ院長）',
+      directorAge: '',
+      hours: '月〜木・土 〜19:30',
+      closedDays: '金・日・祝',
+      estPatientsDay: '45〜50',
+      estPatientsMonth: '約1,000',
+      note: '2025年10月新規開院。2診体制・計20名。門前薬局なし。処方箋=純増分'
+    },
+    {
+      name: '清松クリニック',
+      dept: '内科・胃腸科',
+      directorName: '',
+      directorAge: '',
+      hours: '月火水金土 9:00-12:30/15:00-19:00（土午後15:00-17:00）',
+      closedDays: '木・日・祝',
+      estPatientsDay: '約100',
+      estPatientsMonth: '約2,200',
+      note: '院内・院外処方併用。院外推定60〜65枚/日'
+    },
+    {
+      name: 'なんこし眼科・ペインクリニック',
+      dept: '眼科・麻酔科',
+      directorName: '山田裕一',
+      directorAge: '',
+      hours: '午前9:30-13:00/午後15:00-19:00（受付〜12:30/〜18:30）',
+      closedDays: '金（金曜祝日も休診）。日祝は診療あり',
+      estPatientsDay: '',
+      estPatientsMonth: '',
+      note: '南越谷1-19-1 4F。白内障165件/年。初診予約制。048-940-3133'
+    },
+    {
+      name: '南越谷小林眼科',
+      dept: '眼科',
+      directorName: '',
+      directorAge: '',
+      hours: '月火水木金 9:00-12:30/15:00-17:30、土 9:00-12:30',
+      closedDays: '水曜午後・土曜午後・日・祝',
+      estPatientsDay: '',
+      estPatientsMonth: '',
+      note: 'なんこし眼科と合計で推定48〜75枚/日'
+    }
+  ],
+  c: [
+    {
+      name: '井上内科クリニック',
+      dept: '内科・呼吸器・アレルギー',
+      directorName: '井上尚志',
+      directorAge: '',
+      hours: '月火水金 9:00-13:00/15:00-18:00、土 9:00-13:15',
+      closedDays: '木・土午後・日・祝',
+      estPatientsDay: '50〜70',
+      estPatientsMonth: '1,100〜1,500枚',
+      note: '杏林大卒・元稲城市立病院呼吸器科部長。喘息/COPD/在宅酸素。受付17:45まで'
+    },
+    {
+      name: 'きよせ武谷眼科クリニック',
+      dept: '眼科',
+      directorName: '武谷亮',
+      directorAge: '',
+      hours: '月水木金土 9:00-12:00/14:30-17:30',
+      closedDays: '火・日・祝',
+      estPatientsDay: '60〜80',
+      estPatientsMonth: '1,300〜1,700枚',
+      note: '2025年2月開院。旧きよせの森16年。硝子体内注射・網膜疾患・OCT Triton'
+    }
+  ]
+};
+
+async function run(){
+  document.getElementById('btn').disabled=true;
+  document.getElementById('btn').textContent='投入中...';
+  try{
+    for(const [storeId, clinics] of Object.entries(CLINICS)){
+      const label = storeId === 'k' ? '越谷' : '清瀬';
+      const docId = 'application_' + storeId;
+      log(`\n=== ${label} (${docId}) ===`,'info');
+
+      const docRef = db.collection('store_simulations').doc(docId);
+      const doc = await docRef.get();
+
+      if(doc.exists){
+        await docRef.update({
+          clinics: clinics,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: auth.currentUser.email
+        });
+        log(`  既存ドキュメントを更新`,'ok');
+      }else{
+        await docRef.set({
+          clinics: clinics,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+          updatedBy: auth.currentUser.email
+        });
+        log(`  新規ドキュメントを作成`,'ok');
+      }
+
+      clinics.forEach((cl,i) => {
+        log(`  ${i+1}. ${cl.name}（${cl.dept}）`);
+        log(`     院長: ${cl.directorName || '—'}  診療: ${cl.hours}`);
+        log(`     休診: ${cl.closedDays}  推定: ${cl.estPatientsDay || '—'}人/日`);
+      });
+    }
+    log('\n=== 完了 ===','ok');
+  }catch(e){log(`ERROR: ${e.message}`,'err');}
+  document.getElementById('btn').textContent='完了';
+}
+</script></body></html>
