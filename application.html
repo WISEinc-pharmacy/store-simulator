@@ -147,6 +147,9 @@ function defaultData(){
   };
   return {
     authorities: auth_defaults[currentStore] || auth_defaults.k,
+    clinics:[
+      {name:'',dept:'',directorName:'',directorAge:'',hours:'',closedDays:'',estPatientsDay:'',estPatientsMonth:'',note:''}
+    ],
     structure:{
       dispensingRoom:{area:'',floorType:'',ceilingType:''},
     },
@@ -213,6 +216,7 @@ async function loadData(){
     if(!appData.authorities) appData.authorities=defaultData().authorities;
     if(!appData.authorities.healthCenter) appData.authorities.healthCenter=defaultData().authorities.healthCenter;
     if(!appData.authorities.bureau) appData.authorities.bureau=defaultData().authorities.bureau;
+    if(!appData.clinics) appData.clinics=defaultData().clinics;
   }catch(e){
     console.error('Load failed:',e);
     appData=defaultData();
@@ -314,6 +318,36 @@ function render(){
   h+='<div class="form-label">担当者</div>';
   h+='<input class="form-input" value="'+esc(bu.person)+'" placeholder=""'+roAttr+' onchange="updAuth(\'bureau\',\'person\',this.value)">';
   h+='</div></div>';
+
+  // Section 0.5: 近隣クリニック情報
+  var clinics=appData.clinics||[];
+  h+='<div class="section">';
+  h+='<div class="section-title">近隣クリニック情報</div>';
+  h+='<table class="staff-table"><thead><tr>';
+  h+='<th style="width:160px">クリニック名</th><th style="width:100px">診療科</th><th style="width:120px">院長名</th><th style="width:60px">院長年齢</th><th style="width:160px">診療時間</th><th style="width:100px">休診日</th><th style="width:70px">推定患者/日</th><th style="width:80px">推定患者/月</th><th style="width:140px">備考</th>';
+  if(canEdit) h+='<th style="width:36px"></th>';
+  h+='</tr></thead><tbody>';
+  clinics.forEach(function(cl,i){
+    if(canEdit){
+      h+='<tr>';
+      h+='<td><input value="'+esc(cl.name)+'" placeholder="名称" onchange="updClinic('+i+',\'name\',this.value)"></td>';
+      h+='<td><input value="'+esc(cl.dept)+'" placeholder="科目" onchange="updClinic('+i+',\'dept\',this.value)"></td>';
+      h+='<td><input value="'+esc(cl.directorName)+'" placeholder="院長名" onchange="updClinic('+i+',\'directorName\',this.value)"></td>';
+      h+='<td><input value="'+esc(cl.directorAge)+'" placeholder="" onchange="updClinic('+i+',\'directorAge\',this.value)" style="width:50px"></td>';
+      h+='<td><input value="'+esc(cl.hours)+'" placeholder="9:00-18:00" onchange="updClinic('+i+',\'hours\',this.value)"></td>';
+      h+='<td><input value="'+esc(cl.closedDays)+'" placeholder="木・日祝" onchange="updClinic('+i+',\'closedDays\',this.value)"></td>';
+      h+='<td><input value="'+esc(cl.estPatientsDay)+'" placeholder="" onchange="updClinic('+i+',\'estPatientsDay\',this.value)" style="width:60px"></td>';
+      h+='<td><input value="'+esc(cl.estPatientsMonth)+'" placeholder="" onchange="updClinic('+i+',\'estPatientsMonth\',this.value)" style="width:70px"></td>';
+      h+='<td><input value="'+esc(cl.note)+'" placeholder="" onchange="updClinic('+i+',\'note\',this.value)"></td>';
+      h+='<td><button class="del-btn" onclick="delClinic('+i+')">&times;</button></td>';
+      h+='</tr>';
+    }else{
+      h+='<tr><td>'+esc(cl.name)+'</td><td>'+esc(cl.dept)+'</td><td>'+esc(cl.directorName)+'</td><td>'+esc(cl.directorAge)+'</td><td>'+esc(cl.hours)+'</td><td>'+esc(cl.closedDays)+'</td><td>'+esc(cl.estPatientsDay)+'</td><td>'+esc(cl.estPatientsMonth)+'</td><td>'+esc(cl.note)+'</td></tr>';
+    }
+  });
+  h+='</tbody></table>';
+  if(canEdit) h+='<button class="add-row-btn" onclick="addClinic()">+ クリニックを追加</button>';
+  h+='</div>';
 
   // Completion bar
   h+='<div class="completion"><span>入力進捗: '+comp.filled+'/'+comp.total+'</span>';
@@ -440,6 +474,20 @@ function updAuth(group,field,val){
   if(!appData.authorities[group])appData.authorities[group]={};
   appData.authorities[group][field]=val;
   saveDebounced();
+}
+function updClinic(i,field,val){
+  appData.clinics[i][field]=val;
+  saveDebounced();
+}
+function addClinic(){
+  appData.clinics.push({name:'',dept:'',directorName:'',directorAge:'',hours:'',closedDays:'',estPatientsDay:'',estPatientsMonth:'',note:''});
+  render();saveDebounced();
+}
+function delClinic(i){
+  if(appData.clinics[i].name&&!confirm('「'+appData.clinics[i].name+'」を削除しますか？'))return;
+  appData.clinics.splice(i,1);
+  if(appData.clinics.length===0)appData.clinics.push({name:'',dept:'',directorName:'',directorAge:'',hours:'',closedDays:'',estPatientsDay:'',estPatientsMonth:'',note:''});
+  render();saveDebounced();
 }
 </script>
 </body>
