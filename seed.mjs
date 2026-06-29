@@ -197,6 +197,7 @@ const koshigayaInvestment = {
   equipment: [
     { label: "仲介手数料", value: 5500000, detail: "案件発見者への手数料" },
     { label: "分包機類", value: 5214000, detail: "ユヤマ Twin-R93V分包機+什器一式（税込）", pdfUrl: "https://drive.google.com/file/d/1jiL5PORCrz6Bhd-l00jneuna_mnnDcSS/view" },
+    { label: "\u96fb\u5b50\u5929\u79e4\u30fb\u6563\u5264\u9451\u67fb\u30b7\u30b9\u30c6\u30e0", value: 660000, detail: "\u30e6\u30e4\u30de LIBRA-320D II + OnedyEX2 \u7a0e\u8fbc", pdfUrl: "https://drive.google.com/file/d/1MVadWYszKpwxpbGz-4nFnxkevdCs4Smz/view" },
     { label: "内装費", value: 1858000, detail: "渋谷内装 壁撤去+パーテーション+長尺シート+修繕（税込）", pdfUrl: "https://drive.google.com/file/d/1qRl1WXcfVh2lCs1lzlfdHzRgtqVAn0MV/view" },
     { label: "レセコン・電子処方箋", value: 1650000, detail: "モイネット Pharmy Connect 2台+オン資+電子処方箋（税込・年間26.4万別途）" },
     { label: "什器一式", value: 2618067, detail: "中日販売 調剤棚・カウンター・待合ソファ・運搬組立（税抜）", pdfUrl: "https://drive.google.com/file/d/1WVzGB1-ZXB98fc_xScPu2ealB0AI1K4Q/view" },
