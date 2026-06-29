@@ -212,6 +212,7 @@ async function loadData(){
   try{
     var doc=await db.collection(COLLECTION).doc(DOC_PREFIX+currentStore).get();
     appData=doc.exists?doc.data():defaultData();
+    var shouldBackfillStoreContact=false;
     if(!appData.structure) appData.structure=defaultData().structure;
     if(!appData.staffList) appData.staffList=defaultData().staffList;
     if(!appData.operation) appData.operation=defaultData().operation;
@@ -219,12 +220,14 @@ async function loadData(){
     if(!appData.authorities) appData.authorities=defaultData().authorities;
     if(!appData.authorities.healthCenter) appData.authorities.healthCenter=defaultData().authorities.healthCenter;
     if(!appData.authorities.bureau) appData.authorities.bureau=defaultData().authorities.bureau;
+    if(!appData.storeContact){ appData.storeContact=defaultData().storeContact; shouldBackfillStoreContact=true; }
     if(!appData.clinics) appData.clinics=defaultData().clinics;
   }catch(e){
     console.error('Load failed:',e);
     appData=defaultData();
   }
   render();
+  if(shouldBackfillStoreContact) saveDebounced();
 }
 
 var saveTimer=null;
