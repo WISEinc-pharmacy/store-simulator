@@ -156,6 +156,9 @@ function defaultData(){
     staffList:[
       {name:'',role:'管理薬剤師',workDays:'',workHours:'',workType:'常勤'}
     ],
+    storeContact: currentStore === 'k'
+      ? {phone:'048-972-6933',fax:'048-972-6934'}
+      : {phone:'',fax:''},
     operation:{
       avgPrescriptions:'',pharmacistCount:'',
     },
@@ -319,6 +322,17 @@ function render(){
   h+='<input class="form-input" value="'+esc(bu.person)+'" placeholder=""'+roAttr+' onchange="updAuth(\'bureau\',\'person\',this.value)">';
   h+='</div></div>';
 
+  // Section 0.25: store contact
+  var sc=appData.storeContact||{};
+  h+='<div class="section">';
+  h+='<div class="section-title">\u5e97\u8217\u9023\u7d61\u5148</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="form-label">\u96fb\u8a71\u756a\u53f7</div>';
+  h+='<input class="form-input" value="'+esc(sc.phone||'')+'" placeholder=""'+roAttr+' onchange="updStoreContact(\'phone\',this.value)">';
+  h+='<div class="form-label">FAX\u756a\u53f7</div>';
+  h+='<input class="form-input" value="'+esc(sc.fax||'')+'" placeholder=""'+roAttr+' onchange="updStoreContact(\'fax\',this.value)">';
+  h+='</div></div>';
+
   // Section 0.5: 近隣クリニック情報
   var clinics=appData.clinics||[];
   h+='<div class="section">';
@@ -473,6 +487,11 @@ function updAuth(group,field,val){
   if(!appData.authorities)appData.authorities={};
   if(!appData.authorities[group])appData.authorities[group]={};
   appData.authorities[group][field]=val;
+  saveDebounced();
+}
+function updStoreContact(field,val){
+  if(!appData.storeContact)appData.storeContact={};
+  appData.storeContact[field]=val;
   saveDebounced();
 }
 function updClinic(i,field,val){
