@@ -208,7 +208,8 @@ const koshigayaInvestment = {
     { label: "テナント初期費用", value: 6204000 },
     { label: "行政申請", value: 100000 },
   ],
-  depreciationMonths: 120,
+  depreciationMonths: 60,
+  depMonthsMigrated: true,
 };
 
 const koshigayaConservativeSettings = {
@@ -308,7 +309,8 @@ const kiyoseInvestment = {
     { label: "テナント初期費用", value: 3556200 },
     { label: "行政申請", value: 100000 },
   ],
-  depreciationMonths: 120,
+  depreciationMonths: 60,
+  depMonthsMigrated: true,
 };
 
 const kiyoseConservativeSettings = {
