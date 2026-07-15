@@ -36,6 +36,6 @@ node seed.mjs
 | ファイル | 説明 |
 |---|---|
 | `index.html` | ダッシュボード（Firestore 読み込み） |
-| `gantt.html` | ガントチャート |
+| `gantt.html` | 開局準備・スケジュール |
 | `seed.html` | ブラウザからのデータ投入（Googleログイン使用） |
 | `seed.mjs` | Node.js スクリプトからのデータ投入 |

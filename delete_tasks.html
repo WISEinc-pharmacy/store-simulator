@@ -37,7 +37,7 @@ async function doDelete() {
   const s = document.getElementById('status');
   try {
     await db.collection('opening_tasks').doc('current').delete();
-    s.textContent = '✅ 削除完了！ガントチャートにアクセスすると初期データが再投入されます。';
+    s.textContent = '✅ 削除完了！開局準備・スケジュールにアクセスすると初期データが再投入されます。';
     s.style.color = '#0d652d';
   } catch(e) {
     s.textContent = '❌ エラー: ' + e.message;
