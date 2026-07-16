@@ -12,7 +12,7 @@ button{padding:12px 24px;border:none;border-radius:8px;font-size:1rem;cursor:poi
 .ok{color:#10b981}.err{color:#ef4444}.info{color:#f59e0b}</style></head>
 <body>
 <h1>近隣クリニック情報 一括投入</h1>
-<p>越谷・清瀬の近隣クリニック・競合薬局の情報をFirestoreに投入します。</p>
+<p>越谷・清瀬の近隣クリニック情報をFirestoreに投入します。<br>清瀬は薬剤師不在時間（昼休み 13:30-14:30）も同時に設定されます。</p>
 <button class="login" onclick="doLogin()">Googleでログイン</button>
 <span id="user"></span><br><br>
 <button class="run" id="btn" disabled onclick="run()">クリニック情報を投入</button>
@@ -77,24 +77,30 @@ const CLINICS = {
       dept: '内科・呼吸器・アレルギー',
       directorName: '井上尚志',
       directorAge: '',
-      hours: '月火水金 9:00-13:00/15:00-18:00、土 9:00-13:15',
+      hours: '月火水金 9:00-13:00/15:00-18:00（受付17:45まで）、土 9:00-13:15',
       closedDays: '木・土午後・日・祝',
       estPatientsDay: '50〜70',
       estPatientsMonth: '1,100〜1,500枚',
-      note: '杏林大卒・元稲城市立病院呼吸器科部長。喘息/COPD/在宅酸素。受付17:45まで'
+      note: '杏林大卒・元稲城市立病院呼吸器科部長。喘息/COPD/在宅酸素療法。マイナ受付対応。松山1-11-21'
     },
     {
       name: 'きよせ武谷眼科クリニック',
       dept: '眼科',
       directorName: '武谷亮',
       directorAge: '',
-      hours: '月水木金土 9:00-12:00/14:30-17:30',
+      hours: '月水木金 9:00-12:00/14:30-18:00（注射・レーザーあり）、土 9:00-12:00/14:30-17:30',
       closedDays: '火・日・祝',
       estPatientsDay: '60〜80',
       estPatientsMonth: '1,300〜1,700枚',
-      note: '2025年2月開院。旧きよせの森16年。硝子体内注射・網膜疾患・OCT Triton'
+      note: '2025年2月開院。旧きよせの森16年院長。硝子体内注射・網膜疾患・レーザー治療・オルソケラトロジー。OCT Triton等。松山1-11-19'
     }
   ]
+};
+
+// 清瀬店の薬剤師不在時間（昼休み）
+const KIYOSE_PERMIT = {
+  pharmacistAbsence: 'あり',
+  pharmacistAbsenceDetail: '13:30-14:30（昼休憩）'
 };
 
 async function run(){
@@ -109,19 +115,33 @@ async function run(){
       const docRef = db.collection('store_simulations').doc(docId);
       const doc = await docRef.get();
 
+      const updateData = {
+        clinics: clinics,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedBy: auth.currentUser.email
+      };
+
+      // 清瀬のみ昼休み（薬剤師不在時間）も更新
+      if(storeId === 'c'){
+        updateData['permit.pharmacistAbsence'] = KIYOSE_PERMIT.pharmacistAbsence;
+        updateData['permit.pharmacistAbsenceDetail'] = KIYOSE_PERMIT.pharmacistAbsenceDetail;
+        log(`  薬剤師不在時間: ${KIYOSE_PERMIT.pharmacistAbsenceDetail}`,'info');
+      }
+
       if(doc.exists){
-        await docRef.update({
-          clinics: clinics,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedBy: auth.currentUser.email
-        });
+        await docRef.update(updateData);
         log(`  既存ドキュメントを更新`,'ok');
       }else{
-        await docRef.set({
+        // 新規の場合はネストをフラット展開してset
+        const setData = {
           clinics: clinics,
           updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
           updatedBy: auth.currentUser.email
-        });
+        };
+        if(storeId === 'c'){
+          setData.permit = KIYOSE_PERMIT;
+        }
+        await docRef.set(setData);
         log(`  新規ドキュメントを作成`,'ok');
       }
 
@@ -132,6 +152,7 @@ async function run(){
       });
     }
     log('\n=== 完了 ===','ok');
+    log('application.htmlの「近隣クリニック情報」タブで確認してください。','info');
   }catch(e){log(`ERROR: ${e.message}`,'err');}
   document.getElementById('btn').textContent='完了';
 }
