@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>備品・機材一覧 | WISE Inc.</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🅦</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --primary:#1a73e8;--bg:#f8f9fa;--surface:#fff;--text:#202124;--border:#dadce0;
+  --text-secondary:#5f6368;--accent-green:#34a853;--accent-red:#ea4335;--accent-blue:#4285f4;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+.nav-bar{display:flex;gap:0;background:#1a73e8;padding:0 24px}
+.nav-link{padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500;transition:all 0.2s}
+.nav-link:hover{color:#fff;background:rgba(255,255,255,0.1)}
+.nav-link.active{color:#fff;background:rgba(255,255,255,0.2);border-bottom:2px solid #fff}
+.header{display:flex;justify-content:space-between;align-items:center;padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.header h1{font-size:1.2rem;color:var(--primary)}
+.header .subtitle{font-size:0.85rem;color:var(--text-secondary);margin-left:12px}
+.user-info{display:flex;align-items:center;gap:8px;font-size:0.85rem}
+.user-avatar{width:28px;height:28px;border-radius:50%}
+.role-badge{background:rgba(26,115,232,0.1);color:var(--primary);padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600}
+.btn-sm{padding:6px 14px;background:transparent;border:1px solid var(--border);border-radius:6px;font-size:0.8rem;cursor:pointer;color:var(--text-secondary)}
+.btn-sm:hover{background:var(--bg)}
+.container{max-width:1200px;margin:24px auto;padding:0 24px}
+.category-section{margin-bottom:32px}
+.category-title{font-size:1rem;font-weight:700;color:var(--primary);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--primary);display:flex;align-items:center;gap:8px}
+.eq-table{width:100%;border-collapse:collapse;font-size:0.85rem;background:var(--surface);border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08)}
+.eq-table th{background:#e8f0fe;color:var(--text);padding:10px 14px;text-align:left;font-weight:600;white-space:nowrap;border-bottom:1px solid var(--border)}
+.eq-table td{padding:10px 14px;border-bottom:1px solid var(--border);vertical-align:top}
+.eq-table tr:last-child td{border-bottom:none}
+.eq-table tr:hover{background:#f1f5fd}
+.status-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:0.75rem;font-weight:600}
+.status-decided{background:#ceead6;color:#0d652d}
+.status-planned{background:#e8f0fe;color:#1a73e8}
+.status-tbd{background:#fce8e6;color:#c5221f}
+.status-existing{background:#f0f0f0;color:#5f6368}
+.contact-info{font-size:0.8rem;color:var(--text-secondary);line-height:1.5}
+.note{font-size:0.8rem;color:var(--text-secondary);font-style:italic}
+.store-tag{display:inline-block;padding:1px 6px;border-radius:4px;font-size:0.7rem;font-weight:600;margin-right:4px}
+.tag-both{background:#f3e8fd;color:#7627bb}
+.tag-k{background:#e8f0fe;color:#1a73e8}
+.tag-c{background:#ceead6;color:#0d652d}
+.login-overlay{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f0fe,#f8f9fa,#ceead6)}
+.login-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:48px;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,0.1);max-width:420px;width:90%}
+.login-card h1{font-size:1.4rem;margin-bottom:8px;color:var(--primary)}
+.login-card p{color:var(--text-secondary);margin-bottom:32px;font-size:0.9rem}
+.login-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 32px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:1rem;cursor:pointer}
+.login-btn:hover{opacity:0.9}
+#main-app{display:none}
+.add-row-btn{margin-top:8px;padding:6px 16px;background:transparent;border:1px dashed var(--border);border-radius:6px;font-size:0.8rem;cursor:pointer;color:var(--text-secondary)}
+.add-row-btn:hover{border-color:var(--primary);color:var(--primary)}
+.del-btn{background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:0.9rem;padding:2px 6px}
+.del-btn:hover{background:#fce8e6;border-radius:4px}
+.inline-edit{border:1px solid transparent;background:transparent;padding:4px 6px;border-radius:4px;font-size:0.85rem;width:100%;color:var(--text)}
+.inline-edit:hover{border-color:var(--border)}
+.inline-edit:focus{outline:none;border-color:var(--primary);background:#fff}
+select.inline-edit{cursor:pointer}
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login-overlay">
+  <div class="login-card">
+    <h1>備品・機材一覧</h1>
+    <p>外来プロジェクト</p>
+    <button class="login-btn" onclick="doLogin()">
+      <svg viewBox="0 0 48 48"><path fill="#4285F4" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#34A853" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#EA4335" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+      Googleでログイン
+    </button>
+  </div>
+</div>
+
+<div id="main-app">
+<nav class="nav-bar">
+  <a href="./" class="nav-link">📊 収益シミュレーション</a>
+  <a href="gantt.html" class="nav-link">📅 開局準備・スケジュール</a>
+  <a href="equipment.html" class="nav-link active">🔧 備品・機材</a>
+  <a href="seed.html" class="nav-link">📥 データ投入</a>
+  <a href="drawings.html" class="nav-link">📐 図面</a>
+  <a href="application.html" class="nav-link">📋 申請情報</a>
+</nav>
+
+<div class="header">
+  <div>
+    <h1 style="display:inline">備品・機材・業者一覧</h1>
+    <span class="subtitle">越谷 / 清瀬 共通</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px">
+    <div class="user-info">
+      <img id="user-avatar" class="user-avatar" src="" alt="">
+      <span id="user-name"></span>
+      <span id="role-badge" class="role-badge"></span>
+    </div>
+    <button class="btn-sm" onclick="doLogout()">ログアウト</button>
+  </div>
+</div>
+
+<div class="container" id="content"></div>
+</div>
+
+<script>
+var app=firebase.initializeApp({apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",authDomain:"wise-store-sim.firebaseapp.com",projectId:"wise-store-sim",storageBucket:"wise-store-sim.firebasestorage.app",messagingSenderId:"301306058235",appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"});
+var auth=firebase.auth(),db=firebase.firestore();
+var currentUser=null,canEdit=false,eqData=null,contactsMap={};
+var DOC_ID='equipment_master';
+// 業者担当者の連絡先(氏名・携帯・メール)はFirestore ss_vendor_contacts コレクションにのみ保存する。
+// このファイル(公開HTML)には実値を一切埋め込まない（2026-07-28 セキュリティ対応・INC対応）。
+function genId(){return 'it_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+
+var DEFAULT_DATA={categories:[
+  {name:'レセコン',items:[
+    {id:'receco_fermi',name:'ファーミー',maker:'モイネットシステム',store:'both',status:'decided',note:'越谷・清瀬で採用。納期遅延注意'},
+  ]},
+  {name:'調剤機器',items:[
+    {id:'chozai_sanzai',name:'散剤分包機',maker:'ユヤマ',store:'both',status:'planned',note:'雄飛堂経由で50店舗価格仕入れ可能（取締役C交渉済み）'},
+    {id:'chozai_suizai',name:'水剤分包機',maker:'ユヤマ',store:'both',status:'planned',note:'門前科目による'},
+    {id:'chozai_hakari',name:'はかり・什器',maker:'ユヤマ',store:'both',status:'planned',note:''},
+    {id:'chozai_picking',name:'全自動ピッキング',maker:'ユヤマ',store:'both',status:'tbd',note:'導入可否検討中'},
+  ]},
+  {name:'電子薬歴',items:[
+    {id:'yakureki_musubi',name:'Musubi',maker:'カケハシ',store:'both',status:'decided',note:'既存店導入済み。新店も同様'},
+  ]},
+  {name:'内装',items:[
+    {id:'naiso_shibuya',name:'パーテーション・空調・図面',maker:'渋谷内装',store:'both',status:'decided',note:'蔵前・越谷・清瀬担当'},
+    {id:'naiso_kizai',name:'什器既製品',maker:'中日販売',store:'both',status:'tbd',note:'在庫あり。レイアウト提案可'},
+  ]},
+  {name:'IT・通信',items:[
+    {id:'it_onlineshikaku',name:'オンライン資格確認端末',maker:'（オンライン購入）',store:'both',status:'planned',note:'開局必須'},
+    {id:'it_printer',name:'プリンター',maker:'スリホ想定',store:'both',status:'planned',note:'レセコン見積からは除外'},
+    {id:'it_kanshi',name:'自動監査システム',maker:'（要確認）',store:'both',status:'tbd',note:'既存店で導入済み'},
+  ]},
+  {name:'不動産',items:[
+    {id:'fudousan_koshigaya',name:'越谷テナント',maker:'文化エステート',store:'k',status:'decided',note:''},
+    {id:'fudousan_kiyose',name:'清瀬テナント',maker:'ACRE株式会社',store:'c',status:'decided',note:''},
+  ]},
+]};
+
+var STATUS_LABELS={'decided':'採用決定','planned':'採用予定','tbd':'要検討','existing':'既存流用'};
+var STATUS_OPTIONS=['decided','planned','tbd','existing'];
+var STORE_LABELS={'both':'共通','k':'越谷','c':'清瀬'};
+var STORE_OPTIONS=['both','k','c'];
+
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err=>{alert('ログインエラー: '+err.message)});
+}
+function doLogout(){auth.signOut()}
+
+auth.onAuthStateChanged(async function(user){
+  if(user){
+    currentUser=user;
+    var ud=await db.collection('store_sim_users').doc(user.email).get();
+    if(ud.exists){var role=ud.data().role||'viewer';canEdit=role==='admin'||role==='editor';}
+    else{var snap=await db.collection('store_sim_users').limit(1).get();if(snap.empty){canEdit=true;}else{alert('アクセス権がありません');auth.signOut();return;}}
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    document.getElementById('user-avatar').src=user.photoURL||'';
+    document.getElementById('user-name').textContent=user.displayName||user.email;
+    document.getElementById('role-badge').textContent=canEdit?'editor':'viewer';
+    await loadData();
+  }else{document.getElementById('login-screen').style.display='flex';document.getElementById('main-app').style.display='none';}
+});
+
+async function loadData(){
+  try{
+    var doc=await db.collection('equipment').doc(DOC_ID).get();
+    eqData=doc.exists?doc.data():JSON.parse(JSON.stringify(DEFAULT_DATA));
+  }catch(e){eqData=JSON.parse(JSON.stringify(DEFAULT_DATA));}
+  try{
+    var cdoc=await db.collection('ss_vendor_contacts').doc(DOC_ID).get();
+    contactsMap=cdoc.exists?(cdoc.data().contacts||{}):{};
+  }catch(e){contactsMap={};}
+  // 旧データに平文contactが残っていた場合はここでss_vendor_contactsへ回収し、equipmentドキュメントからは削除する（自己修復マイグレーション）。
+  var idsAdded=false,legacyMigrated=false;
+  eqData.categories.forEach(function(cat){cat.items.forEach(function(item){
+    if(!item.id){item.id=genId();idsAdded=true;}
+    if(item.contact!==undefined){
+      if(item.contact&&item.contact!=='-'&&!contactsMap[item.id]){contactsMap[item.id]=item.contact;legacyMigrated=true;}
+      delete item.contact;idsAdded=true;
+    }
+  });});
+  if(canEdit){
+    if(idsAdded) saveDebounced();
+    if(legacyMigrated) saveContactsDebounced();
+  }
+  render();
+}
+
+var saveTimer=null;
+function saveDebounced(){
+  if(!canEdit)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async function(){
+    try{await db.collection('equipment').doc(DOC_ID).set({...eqData,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}
+    catch(e){console.error('Save failed:',e);}
+  },1500);
+}
+
+var contactsSaveTimer=null;
+function saveContactsDebounced(){
+  if(!canEdit)return;
+  clearTimeout(contactsSaveTimer);
+  contactsSaveTimer=setTimeout(async function(){
+    try{await db.collection('ss_vendor_contacts').doc(DOC_ID).set({contacts:contactsMap,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}
+    catch(e){console.error('Contacts save failed:',e);}
+  },1500);
+}
+
+function contactCell(item){
+  if(!currentUser) return 'ログインで表示';
+  return contactsMap[item.id]||'';
+}
+
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+
+function render(){
+  var el=document.getElementById('content');
+  var h='';
+  eqData.categories.forEach(function(cat,ci){
+    h+='<div class="category-section">';
+    h+='<div class="category-title">'+esc(cat.name);
+    if(canEdit) h+=' <button class="del-btn" onclick="deleteCategory('+ci+')" title="カテゴリ削除">&times;</button>';
+    h+='</div>';
+    h+='<table class="eq-table"><thead><tr>';
+    h+='<th style="width:180px">品目</th><th style="width:150px">メーカー</th><th style="width:240px">連絡先・担当者</th><th style="width:70px">対象</th><th style="width:90px">ステータス</th><th>備考</th>';
+    if(canEdit) h+='<th style="width:36px"></th>';
+    h+='</tr></thead><tbody>';
+    cat.items.forEach(function(item,ii){
+      if(canEdit){
+        h+='<tr>';
+        h+='<td><input class="inline-edit" value="'+esc(item.name)+'" onchange="upd('+ci+','+ii+',\'name\',this.value)"></td>';
+        h+='<td><input class="inline-edit" value="'+esc(item.maker)+'" onchange="upd('+ci+','+ii+',\'maker\',this.value)"></td>';
+        h+='<td><input class="inline-edit" value="'+esc(contactCell(item))+'" onchange="upd('+ci+','+ii+',\'contact\',this.value)"></td>';
+        h+='<td><select class="inline-edit" onchange="upd('+ci+','+ii+',\'store\',this.value)">';
+        STORE_OPTIONS.forEach(function(s){h+='<option value="'+s+'"'+(item.store===s?' selected':'')+'>'+STORE_LABELS[s]+'</option>';});
+        h+='</select></td>';
+        h+='<td><select class="inline-edit" onchange="upd('+ci+','+ii+',\'status\',this.value)">';
+        STATUS_OPTIONS.forEach(function(s){h+='<option value="'+s+'"'+(item.status===s?' selected':'')+'>'+STATUS_LABELS[s]+'</option>';});
+        h+='</select></td>';
+        h+='<td><input class="inline-edit" value="'+esc(item.note)+'" onchange="upd('+ci+','+ii+',\'note\',this.value)"></td>';
+        h+='<td><button class="del-btn" onclick="deleteItem('+ci+','+ii+')">&times;</button></td>';
+        h+='</tr>';
+      }else{
+        var storeTag=item.store==='k'?'tag-k':item.store==='c'?'tag-c':'tag-both';
+        var statusClass=item.status==='decided'?'status-decided':item.status==='planned'?'status-planned':item.status==='existing'?'status-existing':'status-tbd';
+        h+='<tr>';
+        h+='<td><strong>'+esc(item.name)+'</strong></td>';
+        h+='<td>'+esc(item.maker)+'</td>';
+        h+='<td class="contact-info">'+esc(contactCell(item))+'</td>';
+        h+='<td><span class="store-tag '+storeTag+'">'+STORE_LABELS[item.store||'both']+'</span></td>';
+        h+='<td><span class="status-badge '+statusClass+'">'+STATUS_LABELS[item.status||'tbd']+'</span></td>';
+        h+='<td class="note">'+esc(item.note)+'</td>';
+        h+='</tr>';
+      }
+    });
+    h+='</tbody></table>';
+    if(canEdit) h+='<button class="add-row-btn" onclick="addItem('+ci+')">+ 品目を追加</button>';
+    h+='</div>';
+  });
+  if(canEdit) h+='<button class="add-row-btn" onclick="addCategory()" style="margin-bottom:40px">+ カテゴリを追加</button>';
+  el.innerHTML=h;
+}
+
+function upd(ci,ii,field,val){
+  if(field==='contact'){
+    var id=eqData.categories[ci].items[ii].id;
+    contactsMap[id]=val;
+    saveContactsDebounced();
+    return;
+  }
+  eqData.categories[ci].items[ii][field]=val;saveDebounced();
+}
+
+function addItem(ci){
+  eqData.categories[ci].items.push({id:genId(),name:'',maker:'',store:'both',status:'tbd',note:''});
+  render();saveDebounced();
+}
+function deleteItem(ci,ii){
+  var item=eqData.categories[ci].items[ii];
+  if(item.name&&!confirm('「'+item.name+'」を削除しますか？'))return;
+  if(item.id&&contactsMap[item.id]!==undefined){delete contactsMap[item.id];saveContactsDebounced();}
+  eqData.categories[ci].items.splice(ii,1);
+  render();saveDebounced();
+}
+function addCategory(){
+  var name=prompt('カテゴリ名を入力してください');
+  if(!name)return;
+  eqData.categories.push({name:name,items:[]});
+  render();saveDebounced();
+}
+function deleteCategory(ci){
+  if(!confirm('カテゴリ「'+eqData.categories[ci].name+'」を削除しますか？\n含まれる品目もすべて削除されます。'))return;
+  eqData.categories.splice(ci,1);
+  render();saveDebounced();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>収益シミュレーション | WISE Inc.</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🅦</text></svg>">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="収益シミュレーション">
+<meta name="mobile-web-app-title" content="収益シミュレーション">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg-primary:#f8f9fa;--bg-secondary:#ffffff;--bg-card:#ffffff;--bg-card-hover:#f1f5fd;--border:#dadce0;--text-primary:#202124;--text-secondary:#5f6368;--text-muted:#80868b;--accent-blue:#1a73e8;--accent-green:#1e8e3e;--accent-amber:#e37400;--accent-red:#d93025;--accent-purple:#7627bb;--accent-cyan:#007b83;--gradient-blue:linear-gradient(135deg,#1a73e8,#1557b0);--gradient-green:linear-gradient(135deg,#1e8e3e,#137333);--gradient-amber:linear-gradient(135deg,#e37400,#b06000);--gradient-red:linear-gradient(135deg,#d93025,#b3261e);--shadow:0 1px 3px rgba(60,64,67,0.15),0 1px 2px rgba(60,64,67,0.1);--shadow-lg:0 4px 12px rgba(60,64,67,0.15),0 2px 6px rgba(60,64,67,0.1);--radius:12px;--radius-sm:8px;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg-primary);color:var(--text-primary);min-height:100vh;line-height:1.6}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#e8f0fe,#f8f9fa,#e8f0fe)}
+.login-card{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:48px;text-align:center;box-shadow:var(--shadow-lg);max-width:420px;width:90%}
+.login-card h1{font-size:1.5rem;margin-bottom:8px;color:var(--accent-blue)}
+.login-card p{color:var(--text-secondary);margin-bottom:32px;font-size:0.9rem}
+.login-btn{display:inline-flex;align-items:center;gap:10px;padding:12px 32px;background:var(--gradient-blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:1rem;cursor:pointer;transition:all 0.2s}
+.login-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.login-btn svg{width:20px;height:20px}
+#main-app{display:none}
+.header{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.header-left{display:flex;align-items:center;gap:16px}
+.header-title{font-size:1.1rem;font-weight:700;color:var(--accent-blue)}
+.header-right{display:flex;align-items:center;gap:12px}
+.user-info{display:flex;align-items:center;gap:8px;color:var(--text-secondary);font-size:0.85rem}
+.user-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--accent-blue)}
+.role-badge{background:var(--accent-blue);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600}
+.btn-sm{padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);font-size:0.8rem;cursor:pointer;transition:all 0.2s}
+.btn-sm:hover{background:var(--bg-card-hover);color:var(--text-primary)}
+.btn-primary{padding:8px 20px;background:var(--gradient-blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:0.85rem;cursor:pointer;transition:all 0.2s}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.btn-danger{padding:8px 20px;background:var(--gradient-red);color:#fff;border:none;border-radius:var(--radius-sm);font-size:0.85rem;cursor:pointer}
+.btn-icon{padding:4px 10px;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:var(--radius-sm);font-size:0.9rem;cursor:pointer;transition:all 0.2s}
+.btn-icon:hover{color:var(--text-primary);background:var(--bg-card-hover)}
+.store-bar{background:var(--bg-secondary);border-bottom:1px solid var(--border);padding:8px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:49px;z-index:99}
+.store-select{padding:6px 12px;background:#ffffff;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.9rem;cursor:pointer;min-width:160px}
+.store-select:focus{outline:none;border-color:var(--accent-blue)}
+.store-actions{display:flex;gap:6px;align-items:center}
+.store-label{font-size:0.8rem;color:var(--text-muted);font-weight:500}
+.tab-bar{display:flex;gap:2px;padding:0 24px;background:var(--bg-primary);border-bottom:2px solid var(--border);overflow-x:auto;align-items:flex-end;position:sticky;top:89px;z-index:98}
+.tab-btn{padding:10px 20px;background:#eef2f7;border:1px solid var(--border);border-bottom:none;margin-bottom:-2px;color:var(--text-secondary);border-radius:8px 8px 0 0;font-size:0.85rem;cursor:pointer;transition:all 0.15s;white-space:nowrap;font-weight:500}
+.tab-btn:hover{color:var(--text-primary);background:#e3e8ef}
+.tab-btn.active{background:var(--bg-secondary);color:var(--accent-blue);border-color:var(--border) var(--border) var(--bg-secondary);border-bottom:3px solid var(--accent-blue);font-weight:700}
+.tab-btn.tab-overview{background:#e6f4ea;border-color:#ceead6;color:var(--accent-green);font-weight:700;margin-right:8px}
+.tab-btn.tab-overview:hover{background:#d4edda}
+.tab-btn.tab-overview.active{background:var(--bg-secondary);color:var(--accent-green);border-bottom:3px solid var(--accent-green);border-color:var(--border) var(--border) var(--bg-secondary)}
+.tab-add{padding:8px 12px;background:transparent;border:1px dashed var(--border);border-bottom:none;margin-bottom:-2px;color:var(--text-muted);border-radius:8px 8px 0 0;font-size:0.85rem;cursor:pointer}
+.tab-add:hover{border-color:var(--accent-blue);color:var(--accent-blue)}
+.content{padding:24px;max-width:1800px;margin:0 auto}
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;position:relative;overflow:hidden;transition:all 0.3s}
+.kpi-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.kpi-card.blue::before{background:var(--gradient-blue)}.kpi-card.green::before{background:var(--gradient-green)}.kpi-card.amber::before{background:var(--gradient-amber)}.kpi-card.red::before{background:var(--gradient-red)}.kpi-card.purple::before{background:linear-gradient(135deg,#8b5cf6,#7c3aed)}.kpi-card.cyan::before{background:linear-gradient(135deg,#06b6d4,#0891b2)}
+.kpi-label{font-size:0.78rem;color:var(--text-muted);margin-bottom:4px;font-weight:500}
+.kpi-value{font-size:1.6rem;font-weight:800;letter-spacing:-0.5px;margin-bottom:4px}
+.kpi-card.blue .kpi-value{color:var(--accent-blue)}.kpi-card.green .kpi-value{color:var(--accent-green)}.kpi-card.amber .kpi-value{color:var(--accent-amber)}.kpi-card.red .kpi-value{color:var(--accent-red)}.kpi-card.purple .kpi-value{color:var(--accent-purple)}.kpi-card.cyan .kpi-value{color:var(--accent-cyan)}
+.kpi-sub{font-size:0.75rem;color:var(--text-muted)}
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.chart-card.full{grid-column:1/-1}
+.chart-title{font-size:0.9rem;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.chart-title span{display:inline-block;width:4px;height:16px;border-radius:2px;background:var(--accent-blue)}
+.chart-wrap{position:relative;height:300px}
+/* Data Table */
+.dtc{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:auto;margin-bottom:24px;max-height:70vh}
+.dt{border-collapse:separate;border-spacing:0;font-size:0.78rem;white-space:nowrap}
+.dt th{background:#e8f0fe;color:var(--text-secondary);padding:4px 2px;text-align:center;font-weight:600;border:1px solid var(--border);position:sticky;top:0;z-index:10;font-size:0.68rem;white-space:normal;line-height:1.2;min-width:32px}
+.dt th:first-child{position:sticky;left:0;z-index:20}
+.dt th:nth-child(2){position:sticky;left:40px;z-index:20}
+.dt td{padding:2px 2px;text-align:right;border:1px solid rgba(218,220,224,0.6)}
+.dt td.lbl{text-align:center;color:var(--text-secondary);font-weight:500}
+.dt td.lbl:first-child{position:sticky;left:0;z-index:5;background:var(--bg-card)}
+.dt td.lbl:nth-child(2){position:sticky;left:40px;z-index:5;background:var(--bg-card)}
+.dt td.calc{background:rgba(26,115,232,0.04);color:var(--accent-blue);font-weight:600}
+.dt td.pos{color:var(--accent-green);font-weight:600}.dt td.neg{color:var(--accent-red);font-weight:600}
+.dt td.input-cell{background:rgba(30,142,62,0.04)}
+.dt tr.yr{background:rgba(26,115,232,0.06);font-weight:700}
+.dt tr.yr td{border-top:2px solid var(--accent-blue);padding:6px 4px}
+/* 年合計行は.calc/.lbl/.pos/.negのtd個別指定(font-weight/background)がtr側の指定より詳細度で勝つため、
+   行の区別が付きにくかった。年合計行専用にtd側でも明示的に上書きして強調する */
+.dt tr.yr td,.dt tr.yr td.lbl,.dt tr.yr td.calc,.dt tr.yr td.pos,.dt tr.yr td.neg{font-weight:700;background:rgba(26,115,232,0.14)}
+/* sticky列(左端2列相当)は半透明にすると横スクロール時に下の列が透けて見えるため、不透明色で強調を維持する */
+.dt tr.yr td.lbl:first-child,.dt tr.yr td.lbl:nth-child(2){background:var(--bg-card-hover)}
+.dt input[type="number"]{width:100%;padding:3px 4px;background:transparent;border:none;color:var(--text-primary);font-size:0.78rem;text-align:right;font-family:inherit}
+.dt input[type="text"]{width:100%;padding:3px 4px;background:transparent;border:none;color:var(--text-primary);font-size:0.78rem;text-align:left;font-family:inherit}
+.dt input:focus{outline:none;background:rgba(26,115,232,0.08)}
+.dt input::-webkit-inner-spin-button{-webkit-appearance:none}.dt input[type="number"]{-moz-appearance:textfield}
+.dt select{background:transparent;border:none;color:var(--text-primary);font-size:0.78rem;cursor:pointer;padding:3px 2px}
+.dt select:focus{outline:none;background:rgba(26,115,232,0.08)}
+.dt th.input-hdr{background:#e6f4ea;color:var(--accent-green)}
+/* Settings */
+.section{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin-bottom:20px}
+.settings-view{font-size:1.7rem}
+.settings-view .section h3{font-size:1.9rem}
+.settings-view .fg label{font-size:1.5rem}
+.settings-view .fg input,.settings-view .fg select{font-size:1.7rem;padding:12px 16px}
+.settings-view table{font-size:1.5rem}
+.settings-view th,.settings-view td{padding:10px}
+.settings-view input[type="text"],.settings-view input[type="number"],.settings-view input[type="email"],.settings-view select{font-size:1.5rem;padding:10px 14px}
+.settings-view button{font-size:1.4rem}
+.settings-view h4{font-size:1.7rem}
+.section h3{font-size:0.95rem;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section h3 span{width:4px;height:16px;border-radius:2px;display:inline-block}
+.fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+.fg label{display:block;font-size:0.75rem;color:var(--text-muted);margin-bottom:3px}
+.fg input,.fg select{width:100%;padding:7px 10px;background:#ffffff;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.85rem}
+.fg input,.fg select{color:var(--text-primary)}
+.fg input:focus,.fg select:focus{outline:none;border-color:var(--accent-blue)}
+.invest-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+.invest-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.invest-card h3{font-size:0.9rem;color:var(--text-secondary);margin-bottom:12px}
+.invest-item{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(218,220,224,0.5);font-size:0.85rem}
+.invest-item:last-child{border-bottom:none}
+.invest-item .label{color:var(--text-secondary)}.invest-item .value{font-weight:600}
+.invest-total{display:flex;justify-content:space-between;padding:10px 0 0;margin-top:8px;border-top:2px solid var(--accent-blue);font-weight:700;font-size:1rem}
+.summary-table{width:100%;border-collapse:collapse;font-size:0.82rem}
+.summary-table th{background:#e8f0fe;color:var(--text-secondary);padding:10px 14px;text-align:right;white-space:nowrap;font-weight:600;border-bottom:1px solid var(--border)}
+.summary-table th:first-child{text-align:left}
+.summary-table td{padding:8px 14px;text-align:right;white-space:nowrap;border-bottom:1px solid rgba(218,220,224,0.7)}
+.summary-table td:first-child{text-align:left;font-weight:500}
+.summary-table tr.total-row{background:rgba(26,115,232,0.05);font-weight:700}
+.summary-table tr.total-row td{border-top:2px solid var(--accent-blue)}
+.positive{color:var(--accent-green)}.negative{color:var(--accent-red)}
+.admin-panel{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-top:20px}
+.user-table{width:100%;border-collapse:collapse;font-size:0.85rem}
+.user-table th,.user-table td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.user-table th{color:var(--text-muted);font-weight:600}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:1000;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:32px;max-width:500px;width:90%}
+.modal h3{margin-bottom:16px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.modal input{width:100%;padding:10px 14px;background:#ffffff;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.95rem;margin-bottom:12px}
+.modal input:focus{outline:none;border-color:var(--accent-blue)}
+.sc-settings{background:rgba(26,115,232,0.03);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:20px;font-size:1.5rem}
+.sc-settings summary{cursor:pointer;font-size:1.8rem;font-weight:600;color:var(--text-secondary);padding:8px 0}
+.sc-settings label{font-size:1.3rem !important}
+.sc-settings input,.sc-settings select{font-size:1.5rem !important;padding:10px 14px !important}
+.sc-settings table{font-size:1.3rem !important}
+.sc-settings th,.sc-settings td{padding:8px !important}
+.sc-settings .btn-icon{font-size:1.2rem !important}
+.sc-settings summary:hover{color:var(--text-primary)}
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+@media(max-width:768px){.chart-grid{grid-template-columns:1fr}.invest-grid{grid-template-columns:1fr}.kpi-grid{grid-template-columns:repeat(2,1fr)}.content{padding:16px}}
+@keyframes pulse{0%,100%{opacity:0.6}50%{opacity:1}}
+</style>
+</head>
+<body>
+<div id="login-screen">
+  <div class="login-card">
+    <h1>収益シミュレーション</h1>
+    <p>WISE Inc. - 店舗別収益シミュレーション</p>
+    <button class="login-btn" onclick="doLogin()">
+      <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/></svg>
+      Googleでログイン
+    </button>
+  </div>
+</div>
+<div id="main-app">
+  <nav style="display:flex;gap:0;background:#1a73e8;padding:0 24px">
+    <a href="./" style="padding:10px 20px;color:#fff;text-decoration:none;font-size:13px;font-weight:500;background:rgba(255,255,255,0.2);border-bottom:2px solid #fff">📊 収益シミュレーション</a>
+    <a href="gantt.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">📅 開局準備・スケジュール</a>
+    <a href="equipment.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">🔧 備品・機材</a>
+    <a href="seed.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">📥 データ投入</a>
+    <a href="drawings.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">📐 図面</a>
+    <a href="application.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">📋 申請情報</a>
+  </nav>
+  <div class="header">
+    <div class="header-left"><div class="header-title">収益シミュレーション</div></div>
+    <div class="header-right">
+      <div class="user-info"><img id="user-avatar" class="user-avatar" src="" alt=""><span id="user-name"></span><span id="role-badge" class="role-badge"></span></div>
+      <button class="btn-sm" onclick="doLogout()">ログアウト</button>
+    </div>
+  </div>
+  <div class="store-bar">
+    <span class="store-label">店舗:</span>
+    <select class="store-select" id="store-select" onchange="onStoreChange()"></select>
+    <div class="store-actions" id="store-actions"></div>
+  </div>
+  <div class="tab-bar" id="tab-bar"></div>
+  <div class="content" id="main-content"></div>
+</div>
+<div class="modal-overlay" id="modal">
+  <div class="modal"><h3 id="modal-title"></h3><div id="modal-body"></div>
+    <div class="modal-actions"><button class="btn-sm" onclick="closeModal()">キャンセル</button><button class="btn-primary" id="modal-ok">OK</button></div>
+  </div>
+</div>
+<script>
+firebase.initializeApp({apiKey:"AIzaSyCzJVHWz8e4iyhcblnJIw-xCiCGYNC2b8I",authDomain:"wise-store-sim.firebaseapp.com",projectId:"wise-store-sim",storageBucket:"wise-store-sim.firebasestorage.app",messagingSenderId:"301306058235",appId:"1:301306058235:web:a0ac26ca035c2cf22ce75e"});
+const auth=firebase.auth(),db=firebase.firestore();
+
+// ============================================================
+// 科目別単価マスタ（出典: 厚労省「調剤医療費の動向」令和6年度版 表14-3 p.18）
+// https://www.mhlw.go.jp/topics/medias/year/24/dl/gaiyo_data.pdf
+// ============================================================
+const DEPT_MASTER={
+  '内科':       {techFee:2824, drugCost:5615},
+  '心療内科':   {techFee:2824, drugCost:5615},
+  '小児科':     {techFee:2358, drugCost:2032},
+  '外科':       {techFee:2712, drugCost:4886},
+  '整形外科':   {techFee:2198, drugCost:3018},
+  '皮膚科':     {techFee:2191, drugCost:3584},
+  '産婦人科':   {techFee:2238, drugCost:4972},
+  '眼科':       {techFee:1642, drugCost:2077},
+  '耳鼻咽喉科': {techFee:2307, drugCost:2214},
+  '精神科':     {techFee:2789, drugCost:5227},
+};
+const DEPT_NAMES=Object.keys(DEPT_MASTER);
+
+function calcDeptMix(deptMix){
+  let tech=0,drug=0,totalRatio=0;
+  (deptMix||[]).forEach(d=>{
+    const m=DEPT_MASTER[d.dept];if(!m)return;
+    tech+=m.techFee*(d.ratio/100);
+    drug+=m.drugCost*(d.ratio/100);
+    totalRatio+=d.ratio;
+  });
+  return {techFeePerRx:Math.round(tech),drugCostPerRx:Math.round(drug),totalRatio};
+}
+
+// ============================================================
+// Master unit price defaults
+// ============================================================
+const DEFAULT_MASTER={
+  techFeePerRx:1838,       // 技術料単価_外来 円/枚（科目構成から自動計算）
+  drugCostPerRx:4434,      // 薬剤料単価_外来 円/枚（科目構成から自動計算）
+  techFeePerHC:17556,      // 技術料単価_在宅 円/件
+  drugCostPerHC:18564,     // 薬剤料単価_在宅 円/件
+  deptMix:[],              // 科目構成 [{dept:'内科',ratio:60},{dept:'眼科',ratio:40}]
+  drugMarginRate:0.05,     // 薬価差益率
+  rent:473000,             // 地代家賃
+  otherCostRatio:0.08,     // その他経費率
+  operatingDays:25,        // 月間営業日数
+  openTime:'9:00',         // 開局時間
+  closeTime:'18:00',       // 閉局時間
+  notebookLmUrl:'',        // NotebookLM URL
+};
+
+const DEFAULT_STAFF_TYPES=[
+  {name:'エリアマネージャー',monthlySalary:625000},
+  {name:'管理薬剤師',monthlySalary:550000},
+  {name:'一般薬剤師（常勤）',monthlySalary:450000},
+  {name:'業務委託/フリーランス薬剤師',monthlySalary:350000},
+  {name:'一般職事務（常勤）',monthlySalary:230000},
+  {name:'一般職事務（パート）',monthlySalary:150000},
+  {name:'訪問薬剤師',monthlySalary:460000},
+];
+
+const DEFAULT_CONFIRMED_STAFF=[
+  {name:'早船 光',store:'越谷',role:'管理薬剤師',status:'入社確定',plannedStart:'2026-08-01',note:'越谷管薬想定。本人直接連絡フェーズ。'},
+  {name:'日暮 航平',store:'清瀬',role:'EMリーダー',status:'入社確定',plannedStart:'2026-08-01目標',note:'清瀬EMリーダー。入社日確定待ち。'},
+];
+
+function cloneConfirmedStaff(){return JSON.parse(JSON.stringify(DEFAULT_CONFIRMED_STAFF));}
+function ensureConfirmedStaff(data){
+  if(!data.confirmedStaff)data.confirmedStaff=[];
+  DEFAULT_CONFIRMED_STAFF.forEach(def=>{
+    const existing=data.confirmedStaff.find(p=>p.name===def.name);
+    if(existing){
+      Object.keys(def).forEach(k=>{if(existing[k]===undefined||existing[k]==='')existing[k]=def[k];});
+    }else data.confirmedStaff.push({...def});
+  });
+}
+
+const DEFAULT_SC_SETTINGS={
+  drugMarginRate:0.05,     // 薬価差益率（薬剤料に対する利益率）※納入価は課税、売上は非課税
+  rent:473000,             // 地代家賃 月額
+  otherCostRatio:0.08,     // その他経費率(対技術料)
+};
+
+// 動的カラム生成: 科目構成とスタッフ種別から入力列を自動生成
+function buildCols(master, staffTypes){
+  const cols=[];
+  // 固定列
+  cols.push({key:'month',label:'経過月数',type:'fixed'});
+  cols.push({key:'year',label:'年度',type:'fixed'});
+  // 外来枚数（入力）- 1列のみ。単価は科目構成の加重平均で計算
+  cols.push({key:'rxCount',label:'①外来',type:'input',formula:'入力'});
+  cols.push({key:'homecareCount',label:'②在宅件数',type:'input',formula:'入力'});
+  // スタッフ人数（入力）
+  (staffTypes||[]).forEach((st,i)=>cols.push({key:'staff_'+i,label:'③'+st.name,type:'input',group:'staff',staffIdx:i,formula:'入力'}));
+  // 地域支援加算単価（入力）
+  cols.push({key:'regionalPerRx',label:'④地域支援加算',type:'input',formula:'入力'});
+  // 計算列
+  // rxTotalはcalcRowで計算されるがテーブル列としては不要（外来=rxTotal）
+  cols.push({key:'concentrationRate',label:'⑤集中率',type:'calc',suffix:'%',formula:'科目最大比率'});
+  cols.push({key:'techOutpatient',label:'⑥技術料 外来',type:'calc',formula:'①×単価'});
+  cols.push({key:'regionalSupport',label:'⑦地域支援加算',type:'calc',formula:'④×①'});
+  cols.push({key:'techHomecare',label:'⑧技術料 在宅',type:'calc',formula:'②×単価'});
+  cols.push({key:'drugOutpatient',label:'⑨薬剤料 外来',type:'calc',formula:'①×単価'});
+  cols.push({key:'drugHomecare',label:'⑩薬剤料 在宅',type:'calc',formula:'②×単価'});
+  cols.push({key:'revenue',label:'⑪売上高',type:'calc',formula:'⑥+⑦+⑧+⑨+⑩'});
+  cols.push({key:'cogs',label:'⑫仕入原価',type:'calc',formula:'(⑨+⑩)×(1-差益率)'});
+  cols.push({key:'grossProfit',label:'⑬売上総利益',type:'calc',formula:'⑪-⑫'});
+  cols.push({key:'staffCost',label:'⑭人件費',type:'calc',formula:'Σ(③×月給)'});
+  cols.push({key:'rent',label:'⑮地代家賃',type:'calc',formula:'マスタ固定'});
+  cols.push({key:'otherCost',label:'⑯その他経費',type:'calc',formula:'(⑥+⑧)×経費率'});
+  cols.push({key:'depreciation',label:'⑰減価償却',type:'calc',formula:'設備投資÷償却月数'});
+  cols.push({key:'operatingProfit',label:'⑱営業利益',type:'calc',formula:'⑬-⑭-⑮-⑯-⑰'});
+  cols.push({key:'note',label:'備考',type:'input-text'});
+  return cols;
+}
+
+// Calculate a row from master + scenario settings + staffTypes + monthly inputs
+function calcRow(r, master, settings, staffTypes){
+  if(!master||!settings) return r;
+  const m=master, s=settings, st=staffTypes||[];
+  const depts=(m.deptMix||[]).map(d=>d.dept);
+
+  // 外来枚数 × 加重平均単価（科目構成から計算済み）
+  r.rxTotal=r.rxCount||0;
+  const mix=calcDeptMix(m.deptMix);
+  if(mix.totalRatio===100){
+    r.techOutpatient=r.rxTotal*mix.techFeePerRx;
+    r.drugOutpatient=r.rxTotal*mix.drugCostPerRx;
+  }else{
+    r.techOutpatient=r.rxTotal*m.techFeePerRx;
+    r.drugOutpatient=r.rxTotal*m.drugCostPerRx;
+  }
+  // 集中率は科目構成の最大比率
+  const maxRatio=Math.max(...(m.deptMix||[]).map(d=>d.ratio||0),0);
+  r.concentrationRate=(m.deptMix||[]).length>0?maxRatio:100;
+
+  // 在宅
+  r.techHomecare=(r.homecareCount||0)*m.techFeePerHC;
+  r.drugHomecare=(r.homecareCount||0)*m.drugCostPerHC;
+
+  // 地域支援加算（月次入力の単価 × 外来枚数合計）
+  const regPerRx=r.regionalPerRx||0;
+  r.regionalSupport=regPerRx*r.rxTotal;
+
+  // 売上
+  r.revenue=r.techOutpatient+r.regionalSupport+r.techHomecare+r.drugOutpatient+r.drugHomecare;
+
+  // 仕入原価（薬価差益率ベース）
+  const drugRevenue=r.drugOutpatient+r.drugHomecare;
+  const marginRate=m.drugMarginRate!=null?m.drugMarginRate:s.drugMarginRate!=null?s.drugMarginRate:0.05;
+  r.cogs=Math.round(drugRevenue*(1-marginRate));
+  r.grossProfit=r.revenue-r.cogs;
+
+  // 人件費（月次入力の人数 × マスタ月給）
+  r.staffCost=0;
+  (st||[]).forEach((t,i)=>{
+    const cnt=r['staff_'+i]||0;
+    r.staffCost+=t.monthlySalary*cnt;
+  });
+
+  // 経費
+  r.rent=m.rent!=null?m.rent:s.rent;
+  const techTotal=r.techOutpatient+r.techHomecare;
+  r.otherCost=Math.round(techTotal*(m.otherCostRatio!=null?m.otherCostRatio:s.otherCostRatio||0.08));
+
+  // 減価償却費（設備投資合計 ÷ 償却月数・定額法）。投資は店舗全体で共通のため storeData.investment を参照。
+  {
+    const _inv=(typeof storeData!=='undefined'&&storeData)?storeData.investment:null;
+    const _depMonths=(_inv&&_inv.depreciationMonths)?_inv.depreciationMonths:60;
+    const _equipTotal=(_inv&&Array.isArray(_inv.equipment))?_inv.equipment.reduce((a,e)=>a+(e.value||0),0):0;
+    r.depreciation=Math.round(_equipTotal/_depMonths);
+  }
+
+  // 営業利益
+  r.operatingProfit=r.grossProfit-r.staffCost-r.rent-r.otherCost-r.depreciation;
+
+  return r;
+}
+
+function recalcScenario(sc, master, staffTypes){
+  sc.months.forEach(r=>calcRow(r, master, sc.settings, staffTypes));
+}
+
+function emptyMonths(){
+  return Array.from({length:48},(_,i)=>({
+    month:i+1, year:Math.ceil((i+1)/12),
+    homecareCount:0, regionalPerRx:0, note:''
+  }));
+}
+
+function defaultInvestment(){
+  return {equipment:[
+    {label:"レセコン・電子処方箋",value:0,detail:""},
+    {label:"分包機類",value:8000000,detail:""},
+    {label:"オンライン資格確認端末",value:0,detail:""},
+    {label:"什器一式（調剤棚・カウンター・待合ソファ）",value:0,detail:""},
+    {label:"内装費",value:10000000,detail:""},
+    {label:"看板・サイン",value:0,detail:""},
+    {label:"電話・通信設備",value:0,detail:""},
+    {label:"冷蔵庫（医薬品保管用）",value:0,detail:""},
+    {label:"空調設備",value:0,detail:"内装費に含む場合は0"},
+    {label:"セキュリティ（防犯カメラ等）",value:0,detail:""},
+    {label:"プリンター・複合機",value:0,detail:""},
+    {label:"PC・タブレット",value:0,detail:""},
+    {label:"のれん代",value:0,detail:""},
+    {label:"紹介手数料（案件）",value:0,detail:""},
+  ],working:[
+    {label:"運転資金（人件費）",value:2112000,detail:"開業〜売掛金回収までの人件費"},
+    {label:"運転資金（固定費）",value:222000,detail:"家賃・光熱費等"},
+    {label:"テナント初期費用",value:3556200,detail:"敷金・礼金・仲介手数料"},
+    {label:"医薬品初期在庫",value:0,detail:""},
+    {label:"行政申請",value:100000,detail:"保健所・厚生局"},
+    {label:"保険加入（薬局賠償責任保険等）",value:0,detail:""},
+    {label:"採用費（人材紹介手数料）",value:0,detail:""},
+  ],depreciationMonths:60,depMonthsMigrated:true};
+}
+
+// ============================================================
+// State
+// ============================================================
+let currentUser=null,userRole='viewer',canEdit=false;
+let storeList=[],currentStoreId=null,storeData=null;
+let charts={},saveTimer=null,activeTab='overview';
+let detailsState={ov_invest:false,ov_master:false,ov_chart:true,sc_settings:true,sc_charts:true};
+let collapsedYears={};
+let analysisCache={};
+
+// ============================================================
+// Auth
+// ============================================================
+function doLogin(){auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(err=>{alert('ログインエラー: '+err.message)})}
+function doLogout(){auth.signOut()}
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    currentUser=user;
+    const ud=await db.collection('store_sim_users').doc(user.email).get();
+    if(ud.exists){userRole=ud.data().role||'viewer';}
+    else{const snap=await db.collection('store_sim_users').limit(1).get();
+      if(snap.empty){await db.collection('store_sim_users').doc(user.email).set({email:user.email,name:user.displayName,role:'admin',createdAt:firebase.firestore.FieldValue.serverTimestamp()});userRole='admin';}
+      else{alert('アクセス権がありません。\n利用を希望される方は director@wise-jmco.com へご連絡ください。');auth.signOut();return;}}
+    canEdit=userRole==='admin'||userRole==='editor';
+    document.getElementById('login-screen').style.display='none';
+    document.getElementById('main-app').style.display='block';
+    document.getElementById('user-avatar').src=user.photoURL||'';
+    document.getElementById('user-name').textContent=user.displayName||user.email;
+    document.getElementById('role-badge').textContent=userRole;
+    await loadStoreList();
+  }else{document.getElementById('login-screen').style.display='flex';document.getElementById('main-app').style.display='none';}
+});
+
+// ============================================================
+// Store CRUD
+// ============================================================
+async function loadStoreList(){
+  const snap=await db.collection('store_simulations').orderBy('name').get();
+  storeList=[];snap.forEach(d=>storeList.push({id:d.id,name:d.data().name}));
+  if(storeList.length===0&&canEdit){
+    const ref=await db.collection('store_simulations').add({
+      name:'フリー', master:{...DEFAULT_MASTER}, staffTypes:JSON.parse(JSON.stringify(DEFAULT_STAFF_TYPES)), confirmedStaff:cloneConfirmedStaff(), investment:defaultInvestment(),
+      scenarios:[
+        {name:'楽観',settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()},
+        {name:'標準',settings:{...DEFAULT_SC_SETTINGS,regionalSupportPerRx:0,regionalStartMonth:999,staffOutpatient:1188000,baseConcentration:100,concentrationDecay:0.22},months:emptyMonths()},
+        {name:'保守',settings:{...DEFAULT_SC_SETTINGS,regionalSupportPerRx:240,regionalStartMonth:16,staffOutpatient:1056000,rent:315700,baseConcentration:100,concentrationDecay:0.21},months:emptyMonths()},
+      ],
+      createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email
+    });
+    storeList=[{id:ref.id,name:'フリー'}];
+  }
+  renderStoreSelect();
+  if(storeList.length>0){currentStoreId=currentStoreId||storeList[0].id;await loadStore(currentStoreId);}
+}
+
+function renderStoreSelect(){
+  const sel=document.getElementById('store-select');
+  sel.innerHTML=storeList.map(s=>`<option value="${s.id}" ${s.id===currentStoreId?'selected':''}>${s.name}</option>`).join('');
+  document.getElementById('store-actions').innerHTML=canEdit?`<button class="btn-icon" onclick="addStore()" title="店舗追加">+</button><button class="btn-icon" onclick="renameStore()" title="名前変更">&#9998;</button><button class="btn-icon" onclick="deleteStore()" title="削除" style="color:var(--accent-red)">&#10005;</button>`:'';
+}
+
+async function onStoreChange(){currentStoreId=document.getElementById('store-select').value;await loadStore(currentStoreId);}
+
+const YUYAMA_ONEDY_QUOTE_ITEM={label:'\u96fb\u5b50\u5929\u79e4\u30fb\u6563\u5264\u9451\u67fb\u30b7\u30b9\u30c6\u30e0',value:660000,detail:'\u30e6\u30e4\u30de LIBRA-320D II + OnedyEX2 \u7a0e\u8fbc',pdfUrl:'https://drive.google.com/file/d/1MVadWYszKpwxpbGz-4nFnxkevdCs4Smz/view'};
+function ensureKoshigayaYuyamaQuote(store){
+  if(!store||!store.investment||!Array.isArray(store.investment.equipment))return;
+  const name=String(store.name||'');
+  if(!name.includes('\u8d8a\u8c37')&&!name.includes('\u5357\u8d8a\u8c37'))return;
+  const eq=store.investment.equipment;
+  const item={...YUYAMA_ONEDY_QUOTE_ITEM};
+  const idx=eq.findIndex(e=>e.label===item.label||String(e.pdfUrl||'').includes('1MVadWYszKpwxpbGz-4nFnxkevdCs4Smz'));
+  if(idx>=0){eq[idx]={...eq[idx],...item};return;}
+  const baseIdx=eq.findIndex(e=>e.label==='\u5206\u5305\u6a5f\u985e');
+  eq.splice(baseIdx>=0?baseIdx+1:eq.length,0,item);
+}
+
+async function loadStore(id){
+  const doc=await db.collection('store_simulations').doc(id).get();
+  if(!doc.exists)return;
+  storeData={id,...doc.data()};
+  // Ensure master & staffTypes exist (migration)
+  if(!storeData.master) storeData.master={...DEFAULT_MASTER};
+  if(!storeData.staffTypes) storeData.staffTypes=JSON.parse(JSON.stringify(DEFAULT_STAFF_TYPES));
+  if(!storeData.master.deptMix) storeData.master.deptMix=[];
+  if(!storeData.property) storeData.property={};
+  ensureConfirmedStaff(storeData);
+  // 初期投資: 旧ラベルのリネームのみ行う（テンプレート自動追加はaddStoreで実施済み）
+  if(storeData.investment){
+    // 紹介手数料が運転資金にあれば設備に移動（旧データ互換）
+    const wi=storeData.investment.working||[];
+    const refIdx=wi.findIndex(e=>e.label==='紹介手数料');
+    if(refIdx>=0){
+      const refItem=wi.splice(refIdx,1)[0];
+      if(!storeData.investment.equipment.find(e=>e.label==='紹介手数料')){
+        storeData.investment.equipment.push(refItem);
+      }
+    }
+    ['equipment','working'].forEach(cat=>{
+      const existing=storeData.investment[cat]||[];
+      existing.forEach(e=>{if(e.label==='内装費（またはのれん代）')e.label='内装費';});
+      storeData.investment[cat]=existing;
+    });
+    ensureKoshigayaYuyamaQuote(storeData);
+    // 減価償却期間: 旧既定120（P/L未配線で死んでいたフィールドの名残）を一度だけ60ヶ月（5年）へ正規化する。
+    // depMonthsMigrated フラグ以後はユーザー設定を尊重（再正規化しない）。次回保存時にDBへ書き戻され自己修復する。
+    if(!storeData.investment.depMonthsMigrated){
+      storeData.investment.depreciationMonths=60;
+      storeData.investment.depMonthsMigrated=true;
+    }
+  }
+  storeData.scenarios.forEach(sc=>{
+    if(!sc.settings) sc.settings={...DEFAULT_SC_SETTINGS};
+    recalcScenario(sc, storeData.master, storeData.staffTypes);
+  });
+  // activeTabを維持。該当シナリオタブが無い場合のみoverviewに戻す
+  if(activeTab.startsWith('sc')){const idx=parseInt(activeTab.slice(2));if(idx>=storeData.scenarios.length)activeTab='overview';}
+  renderTabs();renderContent();
+}
+
+async function saveStoreDebounced(){
+  if(!canEdit||!storeData)return;
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(async()=>{try{const{id,...d}=storeData;await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}catch(e){console.error(e);}},2000);
+}
+async function saveStoreNow(){
+  if(!canEdit||!storeData)return;clearTimeout(saveTimer);
+  try{const{id,...d}=storeData;await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});alert('保存しました');}catch(e){alert('保存失敗:'+e.message);}
+}
+async function saveStoreImmediate(){if(!canEdit||!storeData)return;const{id,...d}=storeData;await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}
+
+function addStore(){showModal('店舗追加','<input id="mi" placeholder="店舗名">',async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;const ref=await db.collection('store_simulations').add({name:n,master:{...DEFAULT_MASTER},staffTypes:JSON.parse(JSON.stringify(DEFAULT_STAFF_TYPES)),confirmedStaff:cloneConfirmedStaff(),investment:defaultInvestment(),scenarios:[{name:'楽観',settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()},{name:'標準',settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()},{name:'保守',settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()}],createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});currentStoreId=ref.id;closeModal();await loadStoreList();});}
+function renameStore(){if(!storeData)return;showModal('店舗名変更',`<input id="mi" value="${storeData.name}">`,async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;storeData.name=n;await db.collection('store_simulations').doc(storeData.id).update({name:n});const it=storeList.find(s=>s.id===storeData.id);if(it)it.name=n;renderStoreSelect();closeModal();});}
+function deleteStore(){if(!storeData||storeList.length<=1){alert('最後の店舗は削除できません');return;}showModal('店舗削除',`<p>「${storeData.name}」を削除しますか？</p><p style="color:var(--accent-red);font-size:0.85rem;margin-top:8px">⚠ この操作は元に戻せません。全シナリオ・設定データが完全に削除されます。</p><p style="margin-top:8px"><label><input type="checkbox" id="del-confirm"> 削除することを確認しました</label></p>`,async()=>{if(!document.getElementById('del-confirm').checked){alert('チェックボックスにチェックを入れてください');return;}await db.collection('store_simulations').doc(storeData.id).delete();currentStoreId=null;closeModal();await loadStoreList();});}
+
+function addScenario(){showModal('シナリオ追加','<input id="mi" placeholder="シナリオ名">',async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;const sc={name:n,settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()};recalcScenario(sc,storeData.master);storeData.scenarios.push(sc);await saveStoreImmediate();renderTabs();renderContent();closeModal();});}
+function renameScenario(i){showModal('シナリオ名変更',`<input id="mi" value="${storeData.scenarios[i].name}">`,async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;storeData.scenarios[i].name=n;await saveStoreImmediate();renderTabs();closeModal();});}
+function deleteScenario(i){if(storeData.scenarios.length<=1){alert('最後のシナリオは削除できません');return;}showModal('シナリオ削除',`<p>「${storeData.scenarios[i].name}」を削除しますか？</p><p style="color:var(--accent-red);font-size:0.85rem;margin-top:8px">⚠ この操作は元に戻せません。</p>`,async()=>{storeData.scenarios.splice(i,1);await saveStoreImmediate();activeTab='overview';renderTabs();renderContent();closeModal();});}
+
+function showModal(t,b,ok){document.getElementById('modal-title').textContent=t;document.getElementById('modal-body').innerHTML=b;document.getElementById('modal').classList.add('show');document.getElementById('modal-ok').onclick=ok;setTimeout(()=>{const i=document.getElementById('mi');if(i)i.focus();},100);}
+function closeModal(){document.getElementById('modal').classList.remove('show');}
+
+// ============================================================
+// Tabs & Content
+// ============================================================
+function renderTabs(){
+  if(!storeData)return;const bar=document.getElementById('tab-bar');
+  let h=`<button class="tab-btn tab-overview ${activeTab==='overview'?'active':''}" onclick="switchTab('overview')">概要</button>`;
+  h+=`<button class="tab-btn tab-overview ${activeTab==='compare'?'active':''}" onclick="switchTab('compare')">シナリオ比較</button>`;
+  storeData.scenarios.forEach((sc,i)=>h+=`<button class="tab-btn ${activeTab==='sc'+i?'active':''}" onclick="switchTab('sc${i}')">${sc.name}</button>`);
+  if(canEdit)h+=`<button class="tab-add" onclick="addScenario()">+ シナリオ</button>`;
+  h+=`<button class="tab-btn ${activeTab==='equipment'?'active':''}" onclick="switchTab('equipment')" style="margin-left:auto">🔧 備品・機材</button>`;
+  h+=`<button class="tab-btn ${activeTab==='settings'?'active':''}" onclick="switchTab('settings')">基本情報</button>`;
+  bar.innerHTML=h;
+}
+function switchTab(t){activeTab=t;renderTabs();renderContent();}
+function renderContent(){
+  if(!storeData)return;const el=document.getElementById('main-content');
+  el.style.background=activeTab==='overview'?'rgba(16,185,129,0.03)':'';
+  Object.values(charts).forEach(c=>{try{c.destroy();}catch(e){}});charts={};
+  if(activeTab==='overview')renderOverview(el);
+  else if(activeTab.startsWith('sc'))renderScenario(el,+activeTab.slice(2));
+  else if(activeTab==='compare')renderCompare(el);
+  else if(activeTab==='equipment')renderEquipment(el);
+  else if(activeTab==='settings')renderSettings(el);
+}
+
+// ============================================================
+// Helpers
+// ============================================================
+function fmt(n){return n==null?'':Math.round(n).toLocaleString('ja-JP')}
+function fmtInput(v){const n=parseFloat(String(v).replace(/,/g,''));return isNaN(n)?'':fmt(n)}
+function unfmtInput(v){return String(v).replace(/,/g,'')}
+function moneyFocus(el){el.value=unfmtInput(el.value)}
+function moneyBlur(el){el.value=fmtInput(el.value)}
+function fmtMY(n){if(n==null)return'-';return(n<0?'-':'')+Math.abs(Math.round(n/10000)).toLocaleString()+'万円'}
+function fmtOku(n){if(n==null)return'-';if(Math.abs(n)>=1e8)return(n/1e8).toFixed(2)+'億円';return fmtMY(n)}
+function getTotalInv(){const i=storeData.investment;return i.equipment.reduce((s,e)=>s+e.value,0)+i.working.reduce((s,e)=>s+e.value,0)}
+function getAnnual(ms){const y=[];for(let i=1;i<=4;i++){const m=ms.filter(r=>r.year===i);y.push({year:i,revenue:m.reduce((s,r)=>s+r.revenue,0),grossProfit:m.reduce((s,r)=>s+r.grossProfit,0),operatingProfit:m.reduce((s,r)=>s+r.operatingProfit,0)});}return y;}
+function getPayback(ms,inv){let c=-inv;for(let i=0;i<ms.length;i++){c+=ms[i].operatingProfit;if(c>=0)return i+1;}return null;}
+function chartOpts(){return{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{labels:{color:'#5f6368',usePointStyle:true,pointStyleWidth:8}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtMY(c.raw)}}},scales:{x:{ticks:{color:'#5f6368',maxTicksLimit:12},grid:{color:'rgba(218,220,224,0.5)'}},y:{ticks:{color:'#5f6368',callback:v=>fmtMY(v)},grid:{color:'rgba(218,220,224,0.5)'}}}}}
+const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16'];
+function htmlEsc(v){return String(v??'').replace(/[&<>\"']/g,c=>c==='&'?'&amp;':c==='<'?'&lt;':c==='>'?'&gt;':c==='\"'?'&quot;':'&#39;');}
+function renderConfirmedStaffSection(){
+  const list=storeData.confirmedStaff||[];
+  if(!list.length)return '';
+  let h='<div class="section"><h3><span style="background:var(--accent-purple);width:4px;height:16px;border-radius:2px;display:inline-block"></span> \u5185\u5b9a\u8005\u60c5\u5831 ('+htmlEsc(storeData.name)+')</h3>';
+  h+='<p style="margin:0 0 10px;color:var(--text-muted);font-size:0.9rem">\u5185\u5b9a\u6e08\u307f\u4eba\u6750\u3092\u3001\u6708\u6b21\u30c6\u30fc\u30d6\u30eb\u306e\u4eba\u54e1\u6570\u5165\u529b\u3068\u306f\u5225\u306b\u78ba\u8a8d\u3059\u308b\u4e00\u89a7\u3067\u3059\u3002\u4eba\u4ef6\u8cbb\u3078\u53cd\u6620\u3059\u308b\u5834\u5408\u306f\u3001\u4eba\u6750\u30de\u30b9\u30bf\u5358\u4fa1\u3068\u5404\u30b7\u30ca\u30ea\u30aa\u306e\u4eba\u6570\u3092\u8abf\u6574\u3057\u3066\u304f\u3060\u3055\u3044\u3002</p>';
+  h+='<div style="overflow:auto"><table style="width:100%;border-collapse:collapse;min-width:850px"><tr style="color:var(--text-muted)"><th style="text-align:left">\u6c0f\u540d</th><th>\u914d\u7f6e</th><th>\u5f79\u5272</th><th>\u30b9\u30c6\u30fc\u30bf\u30b9</th><th>\u5165\u793e\u4e88\u5b9a</th><th style="text-align:left">\u5099\u8003</th></tr>';
+  list.forEach(p=>{h+='<tr><td style="text-align:left;font-weight:600">'+htmlEsc(p.name)+'</td><td>'+htmlEsc(p.store)+'</td><td>'+htmlEsc(p.role)+'</td><td>'+htmlEsc(p.status)+'</td><td>'+htmlEsc(p.plannedStart)+'</td><td style="text-align:left;color:var(--text-muted)">'+htmlEsc(p.note)+'</td></tr>';});
+  h+='</table></div></div>';
+  return h;
+}
+
+// ============================================================
+// Overview
+// ============================================================
+function renderOverview(el){
+  const inv=storeData.investment,ti=getTotalInv();
+  const res=storeData.scenarios.map(sc=>({name:sc.name,annual:getAnnual(sc.months),payback:getPayback(sc.months,ti),cum4y:sc.months.reduce((s,m)=>s+m.operatingProfit,0)}));
+  const b=res[0],w=res[res.length-1];
+
+  let h=`<div class="kpi-grid">
+    <div class="kpi-card blue"><div class="kpi-label" style="font-size:1.1rem">初期投資</div><div class="kpi-value">${fmtOku(ti)}</div>
+      <div style="display:flex;gap:12px;margin-top:8px">
+        <div style="flex:1;padding:8px 10px;background:rgba(59,130,246,0.15);border-radius:6px;text-align:center"><div style="font-size:1.1rem;font-weight:600;color:var(--text-secondary)">設備</div><div style="font-size:1.6rem;font-weight:800">${fmtMY(inv.equipment.reduce((s,e)=>s+e.value,0))}</div></div>
+        <div style="flex:1;padding:8px 10px;background:rgba(16,185,129,0.15);border-radius:6px;text-align:center"><div style="font-size:1.1rem;font-weight:600;color:var(--text-secondary)">運転</div><div style="font-size:1.6rem;font-weight:800">${fmtMY(inv.working.reduce((s,e)=>s+e.value,0))}</div></div>
+      </div></div>`;
+  if(res.length>=2){
+    h+=`<div class="kpi-card green"><div class="kpi-label" style="font-size:1.1rem">4年目 営業利益</div>
+      <div style="display:flex;gap:16px;align-items:baseline;justify-content:center">
+        ${res.map((r,i)=>{const c=COLORS[i%8];const v=r.annual[3].operatingProfit;return '<div style="text-align:center"><div style="font-size:0.85rem;color:'+c+';font-weight:600">'+r.name+'</div><div style="font-size:1.6rem;font-weight:800;color:'+c+'">'+fmtOku(v)+'</div></div>';}).join('')}
+      </div></div>`;
+    h+=`<div class="kpi-card purple"><div class="kpi-label" style="font-size:1.1rem">投資回収</div><div class="kpi-value">${b.payback?Math.ceil(b.payback/12*10)/10+'年':'4年超'} ~ ${w.payback?Math.ceil(w.payback/12*10)/10+'年':'4年超'}</div></div>`;
+  }else{
+    h+=`<div class="kpi-card green"><div class="kpi-label" style="font-size:1.1rem">4年目 営業利益</div><div class="kpi-value">${fmtOku(b.annual[3].operatingProfit)}</div></div>`;
+    h+=`<div class="kpi-card purple"><div class="kpi-label" style="font-size:1.1rem">投資回収</div><div class="kpi-value">${b.payback?Math.ceil(b.payback/12*10)/10+'年':'4年超'}</div></div>`;
+  }
+  h+=`</div>`;
+  h+=`<details id="det-invest" ${detailsState.ov_invest?'open':''} style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:600;font-size:0.95rem;padding:8px 0;color:var(--text-secondary)" onclick="setTimeout(()=>detailsState.ov_invest=document.getElementById('det-invest').open,0)">📋 初期投資内訳</summary><div class="invest-grid">
+    <div class="invest-card"><h3>設備投資</h3>${inv.equipment.map(e=>`<div class="invest-item"><span class="label">${e.label}${e.detail?` <span style="color:var(--text-muted);font-size:0.8rem;font-weight:400">（${e.detail}）</span>`:''}${e.pdfUrl?` <a href="${e.pdfUrl}" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;font-size:0.85rem" title="見積書PDF">📄</a>`:''}</span><span class="value">${fmt(e.value)}円</span></div>`).join('')}<div class="invest-total"><span>設備計</span><span>${fmt(inv.equipment.reduce((s,e)=>s+e.value,0))}円</span></div></div>
+    <div class="invest-card"><h3>運転資金</h3>${inv.working.map(e=>`<div class="invest-item"><span class="label">${e.label}${e.detail?` <span style="color:var(--text-muted);font-size:0.8rem;font-weight:400">（${e.detail}）</span>`:''}${e.pdfUrl?` <a href="${e.pdfUrl}" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;font-size:0.85rem" title="見積書PDF">📄</a>`:''}</span><span class="value">${fmt(e.value)}円</span></div>`).join('')}<div class="invest-total"><span>運転資金計</span><span>${fmt(inv.working.reduce((s,e)=>s+e.value,0))}円</span></div></div>
+  </div></details>`;
+  h+=renderConfirmedStaffSection();
+  h+=`<details id="det-master" ${detailsState.ov_master?'open':''} style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:600;font-size:0.95rem;padding:8px 0;color:var(--text-secondary)" onclick="setTimeout(()=>detailsState.ov_master=document.getElementById('det-master').open,0)">📊 単価マスタ</summary><div class="section"><div class="fg">
+    <div><label>技術料単価_外来</label><div style="font-size:0.95rem;font-weight:600">${fmt(storeData.master.techFeePerRx)}円/枚</div></div>
+    <div><label>薬剤料単価_外来</label><div style="font-size:0.95rem;font-weight:600">${fmt(storeData.master.drugCostPerRx)}円/枚</div></div>
+    <div><label>技術料単価_在宅</label><div style="font-size:0.95rem;font-weight:600">${fmt(storeData.master.techFeePerHC)}円/件</div></div>
+    <div><label>薬剤料単価_在宅</label><div style="font-size:0.95rem;font-weight:600">${fmt(storeData.master.drugCostPerHC)}円/件</div></div>
+  </div></div></details>`;
+  h+=`<details id="det-chart" ${detailsState.ov_chart?'open':''} style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:600;font-size:0.95rem;padding:8px 0;color:var(--text-secondary)" onclick="setTimeout(()=>detailsState.ov_chart=document.getElementById('det-chart').open,0)">📈 年間営業利益 シナリオ比較</summary><div class="chart-grid"><div class="chart-card full"><div class="chart-wrap"><canvas id="chart-ov"></canvas></div></div></div>
+  <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);overflow:auto"><table class="summary-table" id="tbl-ov"></table></div></details>`;
+  el.innerHTML=h;
+
+  const chartCanvas=document.getElementById('chart-ov');
+  const chartDetail=chartCanvas.closest('details');
+  function initOvChart(){
+    if(charts['ov'])try{charts['ov'].destroy();}catch(e){}
+    charts['ov']=new Chart(chartCanvas,{type:'bar',data:{labels:['1年目','2年目','3年目','4年目'],datasets:res.map((r,i)=>({label:r.name,data:r.annual.map(a=>Math.round(a.operatingProfit)),backgroundColor:COLORS[i%8]+'99',borderColor:COLORS[i%8],borderWidth:1,borderRadius:4}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#5f6368'}}},scales:{x:{ticks:{color:'#5f6368'},grid:{color:'rgba(218,220,224,0.5)'}},y:{ticks:{color:'#5f6368',callback:v=>fmtMY(v)},grid:{color:'rgba(218,220,224,0.5)'}}}}});
+  }
+  if(chartDetail.open)initOvChart();
+  chartDetail.addEventListener('toggle',()=>{if(chartDetail.open)initOvChart();});
+
+  const tbl=document.getElementById('tbl-ov');
+  let th='<thead><tr><th>年度</th>';res.forEach(r=>th+=`<th colspan="2">${r.name}</th>`);th+='</tr><tr><th></th>';res.forEach(()=>th+='<th>売上高</th><th>営業利益</th>');th+='</tr></thead><tbody>';
+  for(let y=0;y<4;y++){th+=`<tr><td>${y+1}年目</td>`;res.forEach(r=>{th+=`<td>${fmtOku(r.annual[y].revenue)}</td><td class="${r.annual[y].operatingProfit>=0?'positive':'negative'}">${fmtOku(r.annual[y].operatingProfit)}</td>`;});th+='</tr>';}
+  th+='<tr class="total-row"><td>4年累計</td>';res.forEach(r=>th+=`<td></td><td class="${r.cum4y>=0?'positive':'negative'}">${fmtOku(r.cum4y)}</td>`);th+='</tr><tr><td>投資回収</td>';res.forEach(r=>th+=`<td colspan="2" style="text-align:center">${r.payback?r.payback+'ヶ月':'4年超'}</td>`);th+='</tr></tbody>';
+  tbl.innerHTML=th;
+}
+
+// ============================================================
+// Scenario
+// ============================================================
+function renderScenario(el,idx){
+  const sc=storeData.scenarios[idx];if(!sc){el.innerHTML='';return;}
+  const ti=getTotalInv(),an=getAnnual(sc.months),pb=getPayback(sc.months,ti),cum=sc.months.reduce((s,m)=>s+m.operatingProfit,0),y4=an[3];
+  const s=sc.settings;
+
+  let h=`<div class="toolbar"><span style="font-size:1rem;font-weight:600">${sc.name}</span>`;
+  if(canEdit)h+=`<button class="btn-icon" onclick="renameScenario(${idx})">&#9998;</button><button class="btn-icon" onclick="deleteScenario(${idx})" style="color:var(--accent-red)">&#10005;</button>`;
+  h+=`<button class="btn-icon" onclick="copyScenarioText(${idx})" style="margin-left:auto" title="テキストコピー">📋 コピー</button>`;
+  if(storeData.master.notebookLmUrl)h+=`<a href="${storeData.master.notebookLmUrl}" target="_blank" class="btn-icon" style="text-decoration:none;color:var(--accent-cyan)" title="NotebookLMで開く">🔗 NotebookLM</a>`;
+  h+=`<button class="btn-primary" style="background:linear-gradient(135deg,#1e8e3e,#137333)" onclick="printSimulation(${idx})">シミュレーション印刷</button>`;
+  h+=`<button class="btn-primary" onclick="printBusinessPlan(${idx})">事業計画書を印刷</button>`;
+  h+=`<button class="btn-primary" style="background:linear-gradient(135deg,#8b5cf6,#7c3aed)" onclick="exportBusinessPlan(${idx})">事業計画書</button>`;
+  h+=`</div>`;
+
+  // 参照パラメータ（すべて設定タブで管理、ここは表示のみ）
+  const mm=storeData.master;
+  h+=`<details class="sc-settings" id="det-sc-settings" ${detailsState.sc_settings?'open':''} ><summary onclick="setTimeout(()=>detailsState.sc_settings=document.getElementById('det-sc-settings').open,0)">参照パラメータ（設定タブで変更）</summary>
+  <div style="margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:12px;font-size:1.1rem">
+    <div>
+      <div style="font-weight:600;margin-bottom:6px;color:var(--accent-blue)">外来単価</div>
+      ${(()=>{
+        const dm=mm.deptMix||[];
+        if(dm.length>0){
+          const mx=calcDeptMix(dm);
+          return dm.map(d=>d.dept+'（'+d.ratio+'%）').join(' / ')+'<br>技術料 <b>'+fmt(mx.techFeePerRx)+'</b>円/枚 ・ 薬剤料 <b>'+fmt(mx.drugCostPerRx)+'</b>円/枚';
+        }
+        return '技術料 <b>'+fmt(mm.techFeePerRx)+'</b>円/枚 / 薬剤料 <b>'+fmt(mm.drugCostPerRx)+'</b>円/枚';
+      })()}
+    </div>
+    <div>
+      <div style="font-weight:600;margin-bottom:6px;color:var(--accent-green)">在宅単価</div>
+      技術料 <b>${fmt(mm.techFeePerHC)}</b>円/件 ・ 薬剤料 <b>${fmt(mm.drugCostPerHC)}</b>円/件
+    </div>
+    <div>
+      <div style="font-weight:600;margin-bottom:6px;color:var(--accent-purple)">経費</div>
+      薬価差益率 <b>${((mm.drugMarginRate!=null?mm.drugMarginRate:s.drugMarginRate!=null?s.drugMarginRate:0.05)*100).toFixed(1)}</b>% ・ 家賃 <b>${fmt(mm.rent!=null?mm.rent:s.rent)}</b>円/月 ・ 経費率 <b>${((mm.otherCostRatio!=null?mm.otherCostRatio:s.otherCostRatio)*100).toFixed(1)}</b>%<br>
+      営業 <b>${mm.operatingDays||25}</b>日/月 ・ <b>${weeklyHoursSummary(mm)}</b>
+    </div>
+  </div>
+  <div style="margin-top:10px;font-size:1rem">
+    <div style="font-weight:600;margin-bottom:6px;color:var(--accent-amber)">人件費単価</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px">
+      ${storeData.staffTypes.map(st=>'<div>'+st.name+': <b>'+fmt(st.monthlySalary)+'</b>円/月</div>').join('')}
+    </div>
+  </div>
+  <p style="margin-top:8px;font-size:0.9rem;color:var(--text-muted)">※ スタッフ人数・地域支援加算単価・外来枚数は月次テーブルで入力</p>
+  </details>`;
+
+  // Analysis panel
+  h+=`<details id="det-analysis" ${detailsState.analysis!==false?'open':''} style="margin-bottom:16px;background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.2);border-radius:var(--radius)">
+    <summary style="cursor:pointer;padding:12px 16px;font-weight:600;font-size:1rem;color:var(--accent-purple);display:flex;align-items:center;gap:8px" onclick="setTimeout(()=>detailsState.analysis=document.getElementById('det-analysis').open,0)">シナリオ分析 <button id="analysis-btn-${idx}" onclick="event.stopPropagation();runAnalysis(${idx})" style="padding:4px 12px;background:rgba(139,92,246,0.15);border:1px solid rgba(139,92,246,0.3);border-radius:6px;color:var(--accent-purple);font-size:0.8rem;cursor:pointer;font-weight:600;margin-left:auto;transition:all 0.2s">${analysisCache[idx]||sc.analysisHtml?'再分析':'分析'}</button></summary>
+    <div style="padding:0 16px 16px;font-size:1.8rem;line-height:1.6;color:var(--text-secondary)" id="analysis-text-${idx}">${analysisCache[idx]||sc.analysisHtml||'<span style="color:var(--text-muted)">「分析」ボタンを押すとシナリオの概要分析を表示します</span>'}</div>
+  </details>`;
+
+  h+=`<div class="kpi-grid">
+    <div class="kpi-card blue"><div class="kpi-label">外来枚数/月</div><div class="kpi-value">${fmt(sc.months[0].rxTotal||sc.months[0].rxCount||0)}枚</div></div>
+    <div class="kpi-card green"><div class="kpi-label">4年目 年間営業利益</div><div class="kpi-value">${fmtOku(y4.operatingProfit)}</div></div>
+    <div class="kpi-card amber"><div class="kpi-label">投資回収</div><div class="kpi-value">${pb?Math.ceil(pb/12*10)/10+'年':'4年超'}</div></div>
+    <div class="kpi-card purple"><div class="kpi-label">4年累積利益</div><div class="kpi-value">${fmtOku(cum)}</div><div class="kpi-sub">ROI ${ti>0?(cum/ti*100).toFixed(0):0}%</div></div>
+  </div>`;
+  h+=`<details id="det-sc-charts" ${detailsState.sc_charts!==false?'open':''} style="margin-bottom:16px"><summary style="cursor:pointer;font-weight:600;font-size:0.95rem;padding:8px 0;color:var(--text-secondary)" onclick="setTimeout(()=>detailsState.sc_charts=document.getElementById('det-sc-charts').open,0)">📈 月次P/L推移 / 累積営業利益</summary><div class="chart-grid">
+    <div class="chart-card"><div class="chart-title"><span></span>月次P/L推移</div><div class="chart-wrap"><canvas id="ch-pl"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title"><span></span>累積営業利益</div><div class="chart-wrap"><canvas id="ch-cum"></canvas></div></div>
+  </div></details>`;
+  // 一括コピーボタン（canEdit のときのみ表示）
+  if(canEdit)h+=`<div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <button onclick="copyMonth1To2_12(${idx})" style="padding:6px 18px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:var(--radius-sm);font-size:0.85rem;cursor:pointer;font-family:inherit;font-weight:600;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">1ヶ月目の入力を2〜12ヶ月目へコピー</button>
+  </div>`;
+  // 期間フィルター
+  h+=`<div style="margin-bottom:12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span style="font-size:0.9rem;font-weight:600;color:var(--text-secondary)">期間フィルター:</span>
+    <input type="number" id="filter-from-${idx}" min="1" max="48" value="1" style="width:60px;padding:4px 8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);text-align:center;font-size:0.9rem">
+    <span style="color:var(--text-muted)">〜</span>
+    <input type="number" id="filter-to-${idx}" min="1" max="48" value="48" style="width:60px;padding:4px 8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);text-align:center;font-size:0.9rem">
+    <span style="color:var(--text-muted)">ヶ月目</span>
+    <button onclick="applyPeriodFilter(${idx})" style="padding:4px 16px;background:var(--gradient-blue);color:#fff;border:none;border-radius:4px;font-size:0.85rem;cursor:pointer">絞り込み</button>
+    <button onclick="resetPeriodFilter(${idx})" style="padding:4px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);border-radius:4px;font-size:0.85rem;cursor:pointer">リセット</button>
+    <span id="period-summary-${idx}" style="font-size:0.9rem;color:var(--accent-blue);font-weight:600"></span>
+  </div>`;
+  h+=`<div class="dtc" id="dtc"></div>`;
+  el.innerHTML=h;
+
+  const co=chartOpts();
+  const scChartDetail=document.getElementById('det-sc-charts');
+  function initScCharts(){
+    if(charts['pl'])try{charts['pl'].destroy();}catch(e){}
+    if(charts['cum'])try{charts['cum'].destroy();}catch(e){}
+    charts['pl']=new Chart(document.getElementById('ch-pl'),{type:'line',data:{labels:sc.months.map(m=>m.month+'月'),datasets:[{label:'売上高',data:sc.months.map(m=>m.revenue),borderColor:'#3b82f6',fill:false,tension:0.3,pointRadius:0},{label:'売上総利益',data:sc.months.map(m=>m.grossProfit),borderColor:'#10b981',fill:false,tension:0.3,pointRadius:0},{label:'営業利益',data:sc.months.map(m=>m.operatingProfit),borderColor:'#f59e0b',fill:false,tension:0.3,pointRadius:0}]},options:co});
+    let cu=-ti;charts['cum']=new Chart(document.getElementById('ch-cum'),{type:'line',data:{labels:sc.months.map(m=>m.month+'月'),datasets:[{label:'累積利益',data:sc.months.map(m=>{cu+=m.operatingProfit;return cu}),borderColor:'#8b5cf6',fill:false,tension:0.3,pointRadius:0},{label:'損益分岐',data:Array(48).fill(0),borderColor:'rgba(148,163,184,0.3)',borderDash:[5,5],pointRadius:0,fill:false}]},options:co});
+  }
+  if(scChartDetail.open)initScCharts();
+  scChartDetail.addEventListener('toggle',()=>{if(scChartDetail.open)initScCharts();});
+
+  renderDataTable(sc,idx);
+}
+
+function onScSetting(idx,key,val){
+  storeData.scenarios[idx].settings[key]=parseFloat(val)||0;
+  recalcScenario(storeData.scenarios[idx],storeData.master,storeData.staffTypes);
+  renderScenario(document.getElementById('main-content'),idx);
+  saveStoreDebounced();
+}
+
+// 期間フィルター
+function applyPeriodFilter(idx){
+  const from=parseInt(document.getElementById('filter-from-'+idx).value)||1;
+  const to=parseInt(document.getElementById('filter-to-'+idx).value)||48;
+  const sc=storeData.scenarios[idx];if(!sc)return;
+  // テーブルの行を表示/非表示
+  document.querySelectorAll('#dtc tr[data-yr]').forEach(tr=>{
+    const cells=tr.querySelectorAll('td');
+    const month=parseInt(cells[0]?.textContent);
+    if(!isNaN(month))tr.style.display=(month>=from&&month<=to)?'':'none';
+  });
+  // 期間サマリーを計算
+  const filtered=sc.months.filter(m=>m.month>=from&&m.month<=to);
+  if(filtered.length>0){
+    const rev=filtered.reduce((s,m)=>s+(m.revenue||0),0);
+    const op=filtered.reduce((s,m)=>s+(m.operatingProfit||0),0);
+    const staff=filtered.reduce((s,m)=>s+(m.staffCost||0),0);
+    const el=document.getElementById('period-summary-'+idx);
+    el.innerHTML=`${from}〜${to}月: 売上${fmtMY(rev)} / 営業利益<span style="color:${op>=0?'var(--accent-green)':'var(--accent-red)'}"> ${fmtMY(op)}</span> / 人件費${fmtMY(staff)} (${filtered.length}ヶ月間)`;
+  }
+}
+function resetPeriodFilter(idx){
+  document.getElementById('filter-from-'+idx).value=1;
+  document.getElementById('filter-to-'+idx).value=48;
+  document.querySelectorAll('#dtc tr[data-yr]').forEach(tr=>tr.style.display='');
+  const el=document.getElementById('period-summary-'+idx);if(el)el.innerHTML='';
+}
+
+async function runAnalysis(idx){
+  const sc=storeData.scenarios[idx];if(!sc)return;
+  // ローディング表示
+  const btn=document.getElementById('analysis-btn-'+idx);
+  const textEl=document.getElementById('analysis-text-'+idx);
+  if(btn){btn.disabled=true;btn.textContent='分析中...';btn.style.animation='pulse 1s ease-in-out infinite';}
+  if(textEl){textEl.style.opacity='0.4';textEl.style.transition='opacity 0.3s';}
+  const s=sc.settings,st=storeData.staffTypes||[];
+  const m=storeData.master;
+  const ti=getTotalInv(),an=getAnnual(sc.months),pb=getPayback(sc.months,ti);
+  const cum=sc.months.reduce((a,m)=>a+m.operatingProfit,0);
+  const m0=sc.months[0],m48=sc.months[47]||m0;
+  const rx0=m0.rxTotal||m0.rxCount||0, rx48=m48.rxTotal||m48.rxCount||0;
+  const hc48=m48.homecareCount||0;
+  const marginRate=m.drugMarginRate!=null?m.drugMarginRate:s.drugMarginRate!=null?s.drugMarginRate:0.05;
+
+  // 科目別枚数（1ヶ月目）
+  const depts=(m.deptMix||[]).map(d=>d.dept);
+  let deptInfo='';
+  if(depts.length>0){
+    deptInfo=depts.map(d=>{const cnt=m0['rx_'+d]||0;const dm=DEPT_MASTER[d];return d+' '+fmt(cnt)+'枚(技'+fmt(dm?dm.techFee:0)+'円)';}).join(' / ');
+  }
+
+  // 人件費（1ヶ月目）
+  let staffInfo='',staffCost0=0;
+  (st||[]).forEach((t,i)=>{const cnt=m0['staff_'+i]||0;if(cnt>0){staffInfo+=(staffInfo?', ':'')+t.name+'x'+cnt;staffCost0+=t.monthlySalary*cnt;}});
+
+  // 単月黒字化月
+  let breakMonth=null;
+  for(let i=0;i<sc.months.length;i++){if(sc.months[i].operatingProfit>0){breakMonth=i+1;break;}}
+
+  // 売上に占める人件費率（4年目）
+  const y4rev=an[3].revenue;
+  const m48staff=m48.staffCost||0;
+  const staffRatio=y4rev>0?((m48staff*12/y4rev)*100).toFixed(1):'--';
+
+  // 地域支援加算（1ヶ月目の単価）
+  const regPerRx=m0.regionalPerRx||0;
+  const regional=regPerRx>0?fmt(regPerRx)+'円/枚':'なし';
+
+  // コンプライアンスチェック（薬剤師1人40枚/日）
+  const opDays=m.operatingDays||25;
+  let complianceWarnings=[];
+  sc.months.forEach(row=>{
+    const rx=row.rxTotal||row.rxCount||0;
+    if(rx===0)return;
+    const dailyRx=Math.ceil(rx/opDays);
+    // 薬剤師数を合計（staffTypesから薬剤師系を判定）
+    let pharmacistCount=0;
+    (st||[]).forEach((t,i)=>{
+      if(t.name.includes('薬剤師')||t.name.includes('マネージャー'))pharmacistCount+=(row['staff_'+i]||0);
+    });
+    const requiredPharmacists=Math.ceil(dailyRx/40);
+    if(pharmacistCount>0&&pharmacistCount<requiredPharmacists){
+      complianceWarnings.push({month:row.month,dailyRx,pharmacistCount,required:requiredPharmacists,perPharmacist:Math.ceil(dailyRx/pharmacistCount)});
+    }
+  });
+
+  // リスク判定
+  let risks=[];
+  if(!breakMonth)risks.push('4年間で単月黒字に到達しない');
+  else if(breakMonth>24)risks.push('単月黒字化まで'+breakMonth+'ヶ月と長い');
+  if(!pb)risks.push('4年以内に投資回収できない');
+  if(marginRate<0.03)risks.push('薬価差益率が'+(marginRate*100).toFixed(1)+'%と低い');
+  if(staffRatio!=='--'&&parseFloat(staffRatio)>50)risks.push('売上に対する人件費率が'+staffRatio+'%と高い');
+  if(rx0===0)risks.push('処方箋枚数が未入力（0枚）');
+  if(staffCost0===0)risks.push('スタッフ人数が未入力');
+  if(complianceWarnings.length>0)risks.push('薬剤師1人あたり40枚/日超過の月あり（'+complianceWarnings.length+'ヶ月）');
+
+  // 強み判定
+  let strengths=[];
+  if(breakMonth&&breakMonth<=6)strengths.push('開業'+breakMonth+'ヶ月目で早期黒字化');
+  if(pb&&pb<=24)strengths.push('投資回収が'+Math.ceil(pb/12*10)/10+'年と早い');
+  if(regPerRx>0)strengths.push('地域支援体制加算あり（'+fmt(regPerRx)+'円/枚）');
+  if(cum>0)strengths.push('4年累計利益 '+fmtOku(cum)+' (ROI '+(ti>0?(cum/ti*100).toFixed(0):0)+'%)');
+
+  let txt='<div style="font-weight:700;color:var(--accent-purple);margin-bottom:12px;font-size:1.8rem">シナリオ分析: '+sc.name+'</div>';
+  txt+='<div style="margin-bottom:6px"><b>前提:</b> 外来'+fmt(rx0)+'枚/月';
+  if(rx48!==rx0)txt+=' → '+fmt(rx48)+'枚/月（48ヶ月目）';
+  if(hc48>0)txt+=' / 在宅'+hc48+'件/月';
+  txt+=' / 薬価差益率'+(marginRate*100).toFixed(1)+'% / 家賃'+fmt(m.rent!=null?m.rent:s.rent)+'円</div>';
+  txt+='<div style="margin-bottom:6px"><b>営業:</b> 月'+opDays+'日 / '+weeklyHoursSummary(m)+'</div>';
+  txt+='<div style="margin-bottom:6px"><b>人員(1ヶ月目):</b> '+(staffInfo||'未設定')+' = '+fmt(staffCost0)+'円/月</div>';
+  txt+='<div style="margin-bottom:6px"><b>地域支援加算:</b> '+regional+'</div>';
+  // コンプライアンスチェック（1ヶ月目）
+  const dailyRx0=rx0>0?Math.ceil(rx0/opDays):0;
+  let phCount0=0;(st||[]).forEach((t,i)=>{if(t.name.includes('薬剤師')||t.name.includes('マネージャー'))phCount0+=(m0['staff_'+i]||0);});
+  const reqPh0=dailyRx0>0?Math.ceil(dailyRx0/40):0;
+  const perPh0=phCount0>0?Math.ceil(dailyRx0/phCount0):0;
+  txt+='<div style="margin-bottom:6px"><b>1日あたり処方箋:</b> '+dailyRx0+'枚/日';
+  if(phCount0>0)txt+='（薬剤師1名あたり'+perPh0+'枚 '+(perPh0>40?'<span style="color:var(--accent-red)">→ 上限40枚超過</span>':'<span style="color:var(--accent-green)">→ 基準内</span>')+'）';
+  txt+='</div>';
+  txt+='<div style="margin-bottom:6px"><b>必要薬剤師数:</b> '+reqPh0+'名（現在'+phCount0+'名'+(phCount0<reqPh0?' <span style="color:var(--accent-red)">→ '+( reqPh0-phCount0)+'名不足</span>':' <span style="color:var(--accent-green)">→ 充足</span>')+'）</div>';
+  txt+='<div style="margin-bottom:6px"><b>単月黒字化:</b> '+(breakMonth?breakMonth+'ヶ月目':'4年間で未達')+'</div>';
+  txt+='<div style="margin-bottom:6px"><b>投資回収:</b> '+(pb?Math.ceil(pb/12*10)/10+'年（'+pb+'ヶ月）':'4年以内に未達')+'</div>';
+  if(strengths.length)txt+='<div style="margin-bottom:6px;color:var(--accent-green)"><b>強み:</b> '+strengths.join(' / ')+'</div>';
+  if(risks.length)txt+='<div style="margin-bottom:6px;color:var(--accent-red)"><b>リスク:</b> '+risks.join(' / ')+'</div>';
+  if(complianceWarnings.length>0){
+    txt+='<div style="margin-top:8px;padding:8px;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:6px;color:var(--accent-red)">';
+    txt+='<b>⚠ コンプライアンス警告（薬剤師1人40枚/日上限）:</b><br>';
+    const first3=complianceWarnings.slice(0,3);
+    first3.forEach(w=>txt+=w.month+'ヶ月目: '+w.dailyRx+'枚/日 ÷ '+w.pharmacistCount+'名 = '+w.perPharmacist+'枚/人（必要'+w.required+'名）<br>');
+    if(complianceWarnings.length>3)txt+='...他'+(complianceWarnings.length-3)+'ヶ月';
+    txt+='</div>';
+  }
+
+  analysisCache[idx]=txt;
+  storeData.scenarios[idx].analysisHtml=txt;
+  document.getElementById('analysis-text-'+idx).innerHTML=txt;
+  // ローディング解除
+  const btn2=document.getElementById('analysis-btn-'+idx);
+  const textEl2=document.getElementById('analysis-text-'+idx);
+  if(btn2){btn2.disabled=false;btn2.textContent='再分析';btn2.style.opacity='1';btn2.style.animation='';}
+  if(textEl2){textEl2.style.opacity='1';}
+  await saveStoreImmediate();
+}
+
+function renderDataTable(sc,scIdx){
+  const wrap=document.getElementById('dtc');
+  const cols=buildCols(storeData.master,storeData.staffTypes);
+  let h='<table class="dt"><thead><tr>';
+  cols.forEach(c=>{
+    const isInput=c.type==='input'||c.type==='input-text';
+    const formulaSub=c.formula?`<br><span style="font-size:0.65rem;font-weight:400;color:var(--text-muted)">${c.formula}</span>`:'';
+    h+=`<th class="${isInput?'input-hdr':''}">${c.label}${formulaSub}</th>`;
+  });
+  h+='</tr></thead><tbody>';
+  let prev=0;
+  sc.months.forEach((row,ri)=>{
+    if(row.year!==prev&&prev>0)h+=yrRow(sc.months,prev,cols);
+    prev=row.year;
+    const hidden=collapsedYears[row.year]?'style="display:none"':'';
+    h+=`<tr data-yr="${row.year}" ${hidden}>`;
+    cols.forEach(col=>{
+      const v=row[col.key];
+      if(col.type==='fixed')h+=`<td class="lbl">${col.key==='year'?v+'年目':v}</td>`;
+      else if(col.type==='calc'){
+        const isPL=col.key==='operatingProfit';
+        const cls=isPL?(v>=0?'pos':'neg'):'calc';
+        h+=`<td class="${cls}">${col.suffix==='%'?(v||0).toFixed(1)+'%':fmt(v)}</td>`;
+      }
+      else if(col.type==='input'&&canEdit)h+=`<td class="input-cell"><input type="number" value="${v||0}" data-k="${col.key}" data-s="${scIdx}" data-r="${ri}" onchange="onRowEdit(this)"></td>`;
+      else if(col.type==='input-text'&&canEdit)h+=`<td class="input-cell"><input type="text" value="${v||''}" data-k="${col.key}" data-s="${scIdx}" data-r="${ri}" onchange="onRowEdit(this)"></td>`;
+      else h+=`<td>${col.type==='input-text'?(v||''):fmt(v||0)}</td>`;
+    });
+    h+='</tr>';
+    // 各年の1ヶ月目（先頭月）の行の直下にコピー行を挿入（canEdit のときのみ）
+    if(canEdit&&ri%12===0){
+      const yi=Math.floor(ri/12);
+      const yrHidden=collapsedYears[row.year]?'style="display:none"':'';
+      h+=`<tr class="copy-row" data-yr="${row.year}" ${yrHidden}><td colspan="${cols.length}" style="text-align:center;padding:4px 2px;background:rgba(37,99,235,0.05);border-top:1px dashed var(--accent-blue);border-bottom:1px dashed var(--accent-blue)"><button onclick="copyYear(${scIdx},${yi})" style="padding:5px 16px;background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;border:none;border-radius:var(--radius-sm);font-size:0.78rem;cursor:pointer;font-family:inherit;font-weight:600;transition:all 0.2s" onmouseover="this.style.transform='translateY(-1px)'" onmouseout="this.style.transform=''">残り12か月同じ数字をコピーする</button></td></tr>`;
+    }
+  });
+  h+=yrRow(sc.months,4,cols)+'</tbody></table>';
+  wrap.innerHTML=h;
+}
+
+function toggleYear(yr){
+  collapsedYears[yr]=!collapsedYears[yr];
+  document.querySelectorAll(`tr[data-yr="${yr}"]`).forEach(r=>r.style.display=collapsedYears[yr]?'none':'');
+  const icon=document.getElementById('yr-icon-'+yr);
+  if(icon)icon.textContent=collapsedYears[yr]?'\u25B6':'\u25BC';
+}
+function yrRow(ms,yr,cols){
+  const ym=ms.filter(m=>m.year===yr);if(!ym.length)return'';
+  const icon=collapsedYears[yr]?'\u25B6':'\u25BC';
+  const fixedCount=cols.filter(c=>c.type==='fixed').length;
+  let h=`<tr class="yr" style="cursor:pointer" onclick="toggleYear(${yr})"><td class="lbl" colspan="${fixedCount}"><span id="yr-icon-${yr}" style="font-size:0.7rem;margin-right:4px">${icon}</span>${yr}年目 合計</td>`;
+  cols.forEach(col=>{
+    if(col.type==='fixed')return;
+    if(col.type==='input-text'){h+='<td></td>';return;}
+    if(col.type==='input'){
+      // 入力列は平均値表示
+      const avg=ym.reduce((s,m)=>s+(m[col.key]||0),0)/ym.length;
+      h+=`<td class="lbl">${avg%1===0?fmt(avg):avg.toFixed(1)}</td>`;
+      return;
+    }
+    // calc列は合計（集中率は平均）
+    if(col.suffix==='%'){
+      const avg=ym.reduce((s,m)=>s+(m[col.key]||0),0)/ym.length;
+      h+=`<td class="calc">${avg.toFixed(1)}%</td>`;
+    }else{
+      const t=ym.reduce((s,m)=>s+(m[col.key]||0),0);
+      const cls=col.key==='operatingProfit'?(t>=0?'pos':'neg'):'calc';
+      h+=`<td class="${cls}">${fmt(t)}</td>`;
+    }
+  });
+  h+='</tr>';return h;
+}
+
+function onRowEdit(el){
+  const key=el.dataset.k,si=+el.dataset.s,ri=+el.dataset.r;
+  const cols=buildCols(storeData.master,storeData.staffTypes);
+  const col=cols.find(c=>c.key===key);
+  storeData.scenarios[si].months[ri][key]=col&&col.type==='input-text'?el.value:(parseFloat(el.value)||0);
+  calcRow(storeData.scenarios[si].months[ri],storeData.master,storeData.scenarios[si].settings,storeData.staffTypes);
+  // Re-render table to update year totals, then restore focus
+  const focusKey=key, focusRi=ri;
+  renderDataTable(storeData.scenarios[si],si);
+  // Restore focus to same cell
+  const inp=document.querySelector(`#dtc input[data-k="${focusKey}"][data-r="${focusRi}"]`);
+  if(inp){inp.focus();inp.select&&inp.select();}
+  saveStoreDebounced();
+}
+
+// 各年の先頭月手入力セルを年内の残り月へ一括コピー（yearIdx=0始まり）
+function copyYear(scIdx,yearIdx){
+  if(!canEdit||!storeData)return;
+  const sc=storeData.scenarios[scIdx];
+  if(!sc)return;
+  const cols=buildCols(storeData.master,storeData.staffTypes);
+  // input-text（備考）は各月固有なので除外、calc・fixed・集中率(suffix='%')も除外
+  const inputCols=cols.filter(c=>c.type==='input');
+  if(!inputCols.length){alert('入力列が見つかりません。');return;}
+  const firstIdx=yearIdx*12;
+  if(firstIdx>=sc.months.length){alert('該当する年のデータがありません。');return;}
+  const m1=sc.months[firstIdx];
+  const allEmpty=inputCols.every(c=>{const v=m1[c.key];return v===undefined||v===null||v===0||v===''});
+  if(allEmpty){alert((yearIdx+1)+'年目の1ヶ月目を先に入力してください。');return;}
+  const yn=yearIdx+1;
+  if(!confirm(yn+'年目の1ヶ月目の入力値を年内の残り月に上書きします。よろしいですか？'))return;
+  for(let ri=firstIdx+1;ri<=firstIdx+11&&ri<sc.months.length;ri++){
+    inputCols.forEach(col=>{
+      sc.months[ri][col.key]=m1[col.key];
+    });
+    calcRow(sc.months[ri],storeData.master,sc.settings,storeData.staffTypes);
+  }
+  renderDataTable(sc,scIdx);
+  saveStoreDebounced();
+}
+
+// Excel-like arrow key navigation in data table
+document.addEventListener('keydown',function(e){
+  const el=document.activeElement;
+  if(!el||!el.closest||!el.closest('.dt'))return;
+  if(!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Tab','Enter'].includes(e.key))return;
+  const td=el.closest('td');if(!td)return;
+  const tr=td.closest('tr');if(!tr)return;
+  const tbody=tr.closest('tbody');if(!tbody)return;
+  const rows=Array.from(tbody.querySelectorAll('tr:not(.yr)'));
+  const ri=rows.indexOf(tr);
+  const cells=Array.from(tr.querySelectorAll('td'));
+  const ci=cells.indexOf(td);
+  let targetRow=ri,targetCol=ci;
+  if(e.key==='ArrowUp'||e.key==='Enter'&&e.shiftKey){targetRow=ri-1;e.preventDefault();}
+  else if(e.key==='ArrowDown'||e.key==='Enter'&&!e.shiftKey){targetRow=ri+1;e.preventDefault();}
+  else if(e.key==='ArrowLeft'){
+    if(el.selectionStart===0||el.type==='number'){targetCol=ci-1;e.preventDefault();}
+    else return;
+  }
+  else if(e.key==='ArrowRight'){
+    if(el.selectionStart===el.value.length||el.type==='number'){targetCol=ci+1;e.preventDefault();}
+    else return;
+  }
+  else if(e.key==='Tab'){
+    targetCol=e.shiftKey?ci-1:ci+1;
+    e.preventDefault();
+  }
+  // Find next input in target cell
+  function focusInput(r,c){
+    if(r<0||r>=rows.length)return false;
+    const tds=rows[r].querySelectorAll('td');
+    // Search from target col in direction
+    for(let i=c;i>=0&&i<tds.length;i+=(c>=ci?1:-1)){
+      const inp=tds[i].querySelector('input,select');
+      if(inp){inp.focus();inp.select&&inp.select();return true;}
+    }
+    return false;
+  }
+  if(!focusInput(targetRow,targetCol)){
+    // If same row, try wrapping
+    if(targetRow!==ri)focusInput(targetRow,ci);
+  }
+});
+
+// ============================================================
+// Compare
+// ============================================================
+function renderCompare(el){
+  const ti=getTotalInv(),scs=storeData.scenarios,co=chartOpts(),labels=Array.from({length:48},(_,i)=>(i+1)+'月');
+  el.innerHTML=`<div class="chart-grid">
+    <div class="chart-card full"><div class="chart-title"><span></span>月次売上高</div><div class="chart-wrap" style="height:400px"><canvas id="ch-cr"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title"><span></span>月次営業利益</div><div class="chart-wrap"><canvas id="ch-cp"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title"><span></span>累積営業利益</div><div class="chart-wrap"><canvas id="ch-cc"></canvas></div></div>
+  </div>`;
+  charts['cr']=new Chart(document.getElementById('ch-cr'),{type:'line',data:{labels,datasets:scs.map((sc,i)=>({label:sc.name,data:sc.months.map(m=>m.revenue),borderColor:COLORS[i%8],fill:false,tension:0.3,pointRadius:0}))},options:co});
+  charts['cp']=new Chart(document.getElementById('ch-cp'),{type:'line',data:{labels,datasets:scs.map((sc,i)=>({label:sc.name,data:sc.months.map(m=>m.operatingProfit),borderColor:COLORS[i%8],fill:false,tension:0.3,pointRadius:0}))},options:co});
+  charts['cc']=new Chart(document.getElementById('ch-cc'),{type:'line',data:{labels,datasets:[...scs.map((sc,i)=>{let c=-ti;return{label:sc.name,data:sc.months.map(m=>{c+=m.operatingProfit;return c}),borderColor:COLORS[i%8],fill:false,tension:0.3,pointRadius:0}}),{label:'損益分岐',data:Array(48).fill(0),borderColor:'rgba(148,163,184,0.3)',borderDash:[5,5],pointRadius:0,fill:false}]},options:co});
+}
+
+// ============================================================
+// Equipment (備品・機材)
+// ============================================================
+const EQ_DOC_ID='equipment_master';
+const EQ_STATUS_LABELS={decided:'採用決定',planned:'採用予定',tbd:'要検討',existing:'既存流用'};
+const EQ_STATUS_OPTIONS=['decided','planned','tbd','existing'];
+const EQ_STORE_LABELS={both:'共通',k:'越谷',c:'清瀬'};
+const EQ_STORE_OPTIONS=['both','k','c'];
+// 業者担当者の連絡先(氏名・携帯・メール)はFirestore ss_vendor_contacts コレクションにのみ保存する。
+// このファイル(公開HTML)には実値を一切埋め込まない（2026-07-28 セキュリティ対応・INC対応）。
+let eqContactsMap={};
+function genEqId(){return 'it_'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+const DEFAULT_EQ_DATA={categories:[
+  {name:'レセコン',items:[{id:'receco_fermi',name:'ファーミー',maker:'モイネットシステム',store:'both',status:'decided',note:'越谷・清瀬で採用。納期遅延注意'}]},
+  {name:'調剤機器',items:[
+    {id:'chozai_sanzai',name:'散剤分包機',maker:'ユヤマ',store:'both',status:'planned',note:'雄飛堂経由で50店舗価格仕入れ可能'},
+    {id:'chozai_suizai',name:'水剤分包機',maker:'ユヤマ',store:'both',status:'planned',note:'門前科目による'},
+    {id:'chozai_hakari',name:'はかり・什器',maker:'ユヤマ',store:'both',status:'planned',note:''},
+    {id:'chozai_picking',name:'全自動ピッキング',maker:'ユヤマ',store:'both',status:'tbd',note:'導入可否検討中'},
+  ]},
+  {name:'電子薬歴',items:[{id:'yakureki_musubi',name:'Musubi',maker:'カケハシ',store:'both',status:'decided',note:'既存店導入済み'}]},
+  {name:'内装',items:[
+    {id:'naiso_shibuya',name:'パーテーション・空調・図面',maker:'渋谷内装',store:'both',status:'decided',note:'蔵前・越谷・清瀬担当'},
+    {id:'naiso_kizai',name:'什器既製品',maker:'中日販売',store:'both',status:'tbd',note:'在庫あり。レイアウト提案可'},
+  ]},
+  {name:'IT・通信',items:[
+    {id:'it_onlineshikaku',name:'オンライン資格確認端末',maker:'（オンライン購入）',store:'both',status:'planned',note:'開局必須'},
+    {id:'it_printer',name:'プリンター',maker:'スリホ想定',store:'both',status:'planned',note:'レセコン見積からは除外'},
+    {id:'it_kanshi',name:'自動監査システム',maker:'（要確認）',store:'both',status:'tbd',note:'既存店で導入済み'},
+  ]},
+  {name:'不動産',items:[
+    {id:'fudousan_koshigaya',name:'越谷テナント',maker:'文化エステート',store:'k',status:'decided',note:''},
+    {id:'fudousan_kiyose',name:'清瀬テナント',maker:'ACRE株式会社',store:'c',status:'decided',note:''},
+  ]},
+]};
+
+let eqData=null,eqSaveTimer=null;
+
+async function loadEquipmentData(){
+  try{const doc=await db.collection('equipment').doc(EQ_DOC_ID).get();eqData=doc.exists?doc.data():JSON.parse(JSON.stringify(DEFAULT_EQ_DATA));}
+  catch(e){eqData=JSON.parse(JSON.stringify(DEFAULT_EQ_DATA));}
+  try{
+    const cdoc=await db.collection('ss_vendor_contacts').doc(EQ_DOC_ID).get();
+    eqContactsMap=cdoc.exists?(cdoc.data().contacts||{}):{};
+  }catch(e){eqContactsMap={};}
+  // 旧データに平文contactが残っていた場合はここでss_vendor_contactsへ回収し、equipmentドキュメントからは削除する（自己修復マイグレーション）。
+  let idsAdded=false,legacyMigrated=false;
+  eqData.categories.forEach(cat=>{cat.items.forEach(item=>{
+    if(!item.id){item.id=genEqId();idsAdded=true;}
+    if(item.contact!==undefined){
+      if(item.contact&&item.contact!=='-'&&!eqContactsMap[item.id]){eqContactsMap[item.id]=item.contact;legacyMigrated=true;}
+      delete item.contact;idsAdded=true;
+    }
+  });});
+  if(canEdit){
+    if(idsAdded) saveEquipmentDebounced();
+    if(legacyMigrated) saveEqContactsDebounced();
+  }
+}
+function saveEquipmentDebounced(){
+  if(!canEdit)return;clearTimeout(eqSaveTimer);
+  eqSaveTimer=setTimeout(async()=>{try{await db.collection('equipment').doc(EQ_DOC_ID).set({...eqData,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}catch(e){console.error(e);}},1500);
+}
+let eqContactsSaveTimer=null;
+function saveEqContactsDebounced(){
+  if(!canEdit)return;clearTimeout(eqContactsSaveTimer);
+  eqContactsSaveTimer=setTimeout(async()=>{try{await db.collection('ss_vendor_contacts').doc(EQ_DOC_ID).set({contacts:eqContactsMap,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}catch(e){console.error(e);}},1500);
+}
+function eqContactCell(item){
+  if(!currentUser) return 'ログインで表示';
+  return eqContactsMap[item.id]||'';
+}
+function eqUpd(ci,ii,field,val){
+  if(field==='contact'){
+    const id=eqData.categories[ci].items[ii].id;
+    eqContactsMap[id]=val;
+    saveEqContactsDebounced();
+    return;
+  }
+  eqData.categories[ci].items[ii][field]=val;saveEquipmentDebounced();
+}
+function eqAddItem(ci){eqData.categories[ci].items.push({id:genEqId(),name:'',maker:'',store:'both',status:'tbd',note:''});renderEquipment(document.getElementById('main-content'));saveEquipmentDebounced();}
+function eqDelItem(ci,ii){const item=eqData.categories[ci].items[ii];if(item.name&&!confirm(`「${item.name}」を削除しますか？`))return;if(item.id&&eqContactsMap[item.id]!==undefined){delete eqContactsMap[item.id];saveEqContactsDebounced();}eqData.categories[ci].items.splice(ii,1);renderEquipment(document.getElementById('main-content'));saveEquipmentDebounced();}
+function eqAddCat(){const name=prompt('カテゴリ名を入力してください');if(!name)return;eqData.categories.push({name,items:[]});renderEquipment(document.getElementById('main-content'));saveEquipmentDebounced();}
+function eqDelCat(ci){if(!confirm(`カテゴリ「${eqData.categories[ci].name}」を削除しますか？\n含まれる品目もすべて削除されます。`))return;eqData.categories.splice(ci,1);renderEquipment(document.getElementById('main-content'));saveEquipmentDebounced();}
+
+async function renderEquipment(el){
+  if(!eqData) await loadEquipmentData();
+  const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML;};
+  const cols=canEdit?7:6;
+  const cellS='padding:3px 6px;border:1px solid var(--border);font-size:0.8rem;white-space:nowrap';
+  const inpS='border:none;background:transparent;padding:2px 4px;font-size:0.8rem;width:100%;color:var(--text-primary);font-family:inherit';
+  let h=`<div style="overflow:auto;max-height:calc(100vh - 200px)">
+  <table style="width:100%;border-collapse:collapse;border:1px solid var(--border)">
+  <thead><tr style="position:sticky;top:0;z-index:5">
+    <th style="${cellS};background:#1a2744;color:var(--text-secondary);font-weight:600;width:140px;text-align:left">品目</th>
+    <th style="${cellS};background:#1a2744;color:var(--text-secondary);font-weight:600;width:120px;text-align:left">メーカー</th>
+    <th style="${cellS};background:#1a2744;color:var(--text-secondary);font-weight:600;width:200px;text-align:left">連絡先・担当者</th>
+    <th style="${cellS};background:#1a2744;color:var(--text-secondary);font-weight:600;width:55px;text-align:center">対象</th>
+    <th style="${cellS};background:#1a2744;color:var(--text-secondary);font-weight:600;width:75px;text-align:center">ステータス</th>
+    <th style="${cellS};background:#1a2744;color:var(--text-secondary);font-weight:600;text-align:left">備考</th>
+    ${canEdit?`<th style="${cellS};background:#1a2744;width:28px"></th>`:''}
+  </tr></thead><tbody>`;
+  eqData.categories.forEach((cat,ci)=>{
+    h+=`<tr><td colspan="${cols}" style="${cellS};background:#263548;font-weight:700;font-size:0.82rem;color:var(--accent-blue);padding:5px 8px">`;
+    h+=esc(cat.name)+` <span style="color:var(--text-muted);font-weight:400;font-size:0.75rem">(${cat.items.length})</span>`;
+    if(canEdit){
+      h+=` <button onclick="eqAddItem(${ci})" style="background:none;border:none;color:var(--accent-blue);cursor:pointer;font-size:0.75rem;padding:0 4px">+行</button>`;
+      h+=` <button onclick="eqDelCat(${ci})" style="background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:0.75rem;padding:0 4px">&times;削除</button>`;
+    }
+    h+=`</td></tr>`;
+    cat.items.forEach((item,ii)=>{
+      const rowBg=ii%2===0?'transparent':'rgba(255,255,255,0.02)';
+      if(canEdit){
+        h+=`<tr style="background:${rowBg}">`;
+        h+=`<td style="${cellS}"><input style="${inpS}" value="${esc(item.name)}" onchange="eqUpd(${ci},${ii},'name',this.value)"></td>`;
+        h+=`<td style="${cellS}"><input style="${inpS}" value="${esc(item.maker)}" onchange="eqUpd(${ci},${ii},'maker',this.value)"></td>`;
+        h+=`<td style="${cellS}"><input style="${inpS}" value="${esc(eqContactCell(item))}" onchange="eqUpd(${ci},${ii},'contact',this.value)"></td>`;
+        h+=`<td style="${cellS};text-align:center"><select style="${inpS};cursor:pointer;text-align:center" onchange="eqUpd(${ci},${ii},'store',this.value)">`;
+        EQ_STORE_OPTIONS.forEach(s=>{h+=`<option value="${s}"${item.store===s?' selected':''}>${EQ_STORE_LABELS[s]}</option>`;});
+        h+=`</select></td>`;
+        h+=`<td style="${cellS};text-align:center"><select style="${inpS};cursor:pointer;text-align:center" onchange="eqUpd(${ci},${ii},'status',this.value)">`;
+        EQ_STATUS_OPTIONS.forEach(s=>{h+=`<option value="${s}"${item.status===s?' selected':''}>${EQ_STATUS_LABELS[s]}</option>`;});
+        h+=`</select></td>`;
+        h+=`<td style="${cellS}"><input style="${inpS}" value="${esc(item.note)}" onchange="eqUpd(${ci},${ii},'note',this.value)"></td>`;
+        h+=`<td style="${cellS};text-align:center"><button onclick="eqDelItem(${ci},${ii})" style="background:none;border:none;color:var(--accent-red);cursor:pointer;font-size:0.8rem">&times;</button></td>`;
+        h+=`</tr>`;
+      }else{
+        h+=`<tr style="background:${rowBg}">`;
+        h+=`<td style="${cellS};font-weight:500">${esc(item.name)}</td>`;
+        h+=`<td style="${cellS}">${esc(item.maker)}</td>`;
+        h+=`<td style="${cellS};color:var(--text-muted)">${esc(eqContactCell(item))}</td>`;
+        h+=`<td style="${cellS};text-align:center">${EQ_STORE_LABELS[item.store||'both']}</td>`;
+        h+=`<td style="${cellS};text-align:center">${EQ_STATUS_LABELS[item.status||'tbd']}</td>`;
+        h+=`<td style="${cellS};color:var(--text-muted)">${esc(item.note)}</td>`;
+        h+=`</tr>`;
+      }
+    });
+  });
+  h+=`</tbody></table></div>`;
+  if(canEdit) h+=`<button onclick="eqAddCat()" style="margin-top:8px;padding:4px 12px;background:transparent;border:1px solid var(--border);font-size:0.8rem;cursor:pointer;color:var(--text-muted)">+ カテゴリ追加</button>`;
+  el.innerHTML=h;
+}
+
+// ============================================================
+// Settings
+// ============================================================
+function renderSettings(el){
+  let h='<div class="settings-view">';
+  if(canEdit){
+    const m=storeData.master,inv=storeData.investment;
+    // 科目構成
+    if(!m.deptMix)m.deptMix=[];
+    const mix=calcDeptMix(m.deptMix);
+    h+=`<div class="section"><h3><span style="background:var(--accent-cyan)"></span>科目構成・単価マスタ (${storeData.name})</h3>
+    <div style="margin-bottom:16px">
+      <div style="font-weight:600;margin-bottom:8px">門前科目の構成比</div>
+      <table style="border-collapse:collapse;max-width:700px" id="dept-mix-tbl">
+        <tr style="color:var(--text-muted)"><th style="text-align:left">科目</th><th style="width:120px">構成比(%)</th><th>技術料</th><th>薬剤料</th><th></th></tr>
+        ${m.deptMix.map((d,i)=>{const dm=DEPT_MASTER[d.dept]||{techFee:0,drugCost:0};return `<tr>
+          <td><select onchange="onDeptMixChange(${i},'dept',this.value)" style="padding:8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary)">${DEPT_NAMES.map(n=>`<option value="${n}"${n===d.dept?' selected':''}>${n}</option>`).join('')}</select></td>
+          <td><input type="number" value="${d.ratio}" min="0" max="100" style="width:100px;padding:8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);text-align:center" onchange="onDeptMixChange(${i},'ratio',this.value)"></td>
+          <td style="text-align:right;color:var(--text-primary)">${fmt(dm.techFee)}円</td>
+          <td style="text-align:right;color:var(--text-primary)">${fmt(dm.drugCost)}円</td>
+          <td><button onclick="removeDeptMix(${i})" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:6px 12px;border-radius:4px">削除</button></td>
+        </tr>`;}).join('')}
+      </table>
+      <button onclick="addDeptMix()" style="margin-top:8px;padding:8px 20px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:6px;cursor:pointer;color:var(--accent-blue);font-weight:600">+ 科目追加</button>
+      <div style="margin-top:12px;padding:12px;background:rgba(59,130,246,0.06);border-radius:8px">
+        <span style="color:${mix.totalRatio===100?'var(--accent-green)':'var(--accent-red)'};font-weight:600">構成比合計: ${mix.totalRatio}%${mix.totalRatio!==100?' (100%にしてください)':' ✓'}</span><br>
+        <span style="font-weight:600">加重平均 技術料: ${fmt(mix.techFeePerRx)}円/枚 ｜ 薬剤料: ${fmt(mix.drugCostPerRx)}円/枚</span>
+      </div>
+    </div>
+    <div class="fg">
+      <div><label>技術料単価_外来 (円/枚) ※科目構成から自動計算</label><div style="font-weight:700;color:var(--accent-blue)">${fmt(m.techFeePerRx)}円</div></div>
+      <div><label>薬剤料単価_外来 (円/枚) ※科目構成から自動計算</label><div style="font-weight:700;color:var(--accent-blue)">${fmt(m.drugCostPerRx)}円</div></div>
+      <div><label>技術料単価_在宅 (円/件)</label><input type="text" value="${fmt(m.techFeePerHC)}" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="onMaster('techFeePerHC',unfmtInput(this.value))"></div>
+      <div><label>薬剤料単価_在宅 (円/件)</label><input type="text" value="${fmt(m.drugCostPerHC)}" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="onMaster('drugCostPerHC',unfmtInput(this.value))"></div>
+    </div>
+    <h3 style="margin-top:20px"><span style="background:var(--accent-purple);width:4px;height:16px;border-radius:2px;display:inline-block"></span> 経費設定</h3>
+    <div class="fg">
+      <div><label>薬価差益率 (%)</label><input type="number" step="0.1" value="${((m.drugMarginRate!=null?m.drugMarginRate:0.05)*100).toFixed(1)}" onchange="onMaster('drugMarginRate',this.value/100)"></div>
+      <div><label>地代家賃 (月額)</label><input type="text" value="${fmt(m.rent||0)}" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="onMaster('rent',unfmtInput(this.value))"></div>
+      <div><label>その他経費率 (対技術料)</label><input type="number" step="0.01" value="${m.otherCostRatio||0.08}" onchange="onMaster('otherCostRatio',this.value)"></div>
+    </div>
+    <h3 style="margin-top:20px"><span style="background:var(--accent-green);width:4px;height:16px;border-radius:2px;display:inline-block"></span> 営業情報</h3>
+    <div class="fg" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">
+      <div><label>月間営業日数</label><input type="number" value="${m.operatingDays||25}" onchange="onMaster('operatingDays',this.value)"></div>
+    </div>
+    <div style="margin-top:12px;overflow-x:auto">
+      <table style="border-collapse:collapse;min-width:560px;width:100%;font-size:0.82rem">
+        <thead>
+          <tr style="background:var(--bg-secondary)">
+            <th style="padding:8px 10px;text-align:left;border:1px solid var(--border);color:var(--text-secondary);white-space:nowrap">曜日</th>
+            <th style="padding:8px 10px;text-align:left;border:1px solid var(--border);color:var(--text-secondary);white-space:nowrap">開局</th>
+            <th style="padding:8px 10px;text-align:left;border:1px solid var(--border);color:var(--text-secondary);white-space:nowrap">閉局</th>
+            <th style="padding:8px 10px;text-align:left;border:1px solid var(--border);color:var(--text-secondary);white-space:nowrap">休憩（分）</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${buildWeeklyHoursRows(m)}
+        </tbody>
+      </table>
+    </div>
+    <h3 style="margin-top:20px"><span style="background:var(--accent-cyan);width:4px;height:16px;border-radius:2px;display:inline-block"></span> 外部連携</h3>
+    <div class="fg">
+      <div style="grid-column:1/-1"><label>NotebookLM URL</label><input type="text" value="${m.notebookLmUrl||''}" onchange="storeData.master.notebookLmUrl=this.value;saveStoreDebounced()" placeholder="https://notebooklm.google.com/notebook/..." style="width:100%"></div>
+    </div>
+    <button class="btn-primary" onclick="saveMaster()" style="margin-top:12px">マスタ保存 (全シナリオ再計算)</button></div>`;
+    // 物件情報
+    const prop=storeData.property||{};
+    h+=`<div class="section"><h3><span style="background:var(--accent-amber);width:4px;height:16px;border-radius:2px;display:inline-block"></span> 物件情報 (${storeData.name})</h3>
+    <div class="fg">
+      <div><label>物件名</label><input type="text" value="${prop.name||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.name=this.value;saveStoreDebounced()" placeholder="ビル名・号室" style="width:100%"></div>
+      <div><label>所在地</label><input type="text" value="${prop.address||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.address=this.value;saveStoreDebounced()" placeholder="住所" style="width:100%"></div>
+      <div><label>最寄駅</label><input type="text" value="${prop.nearestStation||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.nearestStation=this.value;saveStoreDebounced()" placeholder="路線名 駅名 徒歩○分" style="width:100%"></div>
+      <div><label>面積（坪/㎡）</label><input type="text" value="${prop.area||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.area=this.value;saveStoreDebounced()" placeholder="例: 30坪 / 99㎡" style="width:100%"></div>
+      <div><label>賃料（月額）</label><input type="text" value="${fmt(prop.rent!=null?prop.rent:(m.rent||0))}" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="if(!storeData.property)storeData.property={};storeData.property.rent=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></div>
+      <div><label>共益費（月額）</label><input type="text" value="${fmt(prop.commonFee||0)}" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="if(!storeData.property)storeData.property={};storeData.property.commonFee=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></div>
+      <div><label>保証金/敷金</label><input type="text" value="${fmt(prop.deposit||0)}" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="if(!storeData.property)storeData.property={};storeData.property.deposit=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></div>
+      <div><label>契約期間</label><input type="text" value="${prop.contractPeriod||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.contractPeriod=this.value;saveStoreDebounced()" placeholder="例: 5年（自動更新）" style="width:100%"></div>
+      <div><label>管理会社</label><input type="text" value="${prop.managementCompany||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.managementCompany=this.value;saveStoreDebounced()" placeholder="管理会社名（担当者名）" style="width:100%"></div>
+      <div style="grid-column:1/-1"><label>門前医療機関</label><input type="text" value="${prop.frontClinic||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.frontClinic=this.value;saveStoreDebounced()" placeholder="診療科・距離等" style="width:100%"></div>
+      <div><label>想定処方箋枚数（月）</label><input type="text" value="${fmt(prop.expectedRx||0)}" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="if(!storeData.property)storeData.property={};storeData.property.expectedRx=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></div>
+      <div style="grid-column:1/-1"><label>特記事項</label><input type="text" value="${prop.note||''}" onchange="if(!storeData.property)storeData.property={};storeData.property.note=this.value;saveStoreDebounced()" placeholder="備考" style="width:100%"></div>
+    </div></div>`;
+    h+=renderConfirmedStaffSection();
+    // Staff types
+    h+=`<div class="section"><h3><span style="background:var(--accent-green)"></span>人材マスタ (${storeData.name})</h3>
+    <table style="width:100%;border-collapse:collapse;max-width:600px">
+      <tr style="color:var(--text-muted)"><th style="text-align:left">種別名</th><th>月給</th><th>年収</th><th></th></tr>
+      ${storeData.staffTypes.map((st,i)=>`<tr>
+        <td><input type="text" value="${st.name}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:180px" onchange="storeData.staffTypes[${i}].name=this.value;saveStoreDebounced()"></td>
+        <td><input type="text" value="${fmt(st.monthlySalary)}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:140px;text-align:right" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="storeData.staffTypes[${i}].monthlySalary=parseFloat(unfmtInput(this.value))||0;this.closest('tr').querySelector('.yr').textContent=fmt((parseFloat(unfmtInput(this.value))||0)*12)+'円';saveStoreDebounced()"></td>
+        <td style="text-align:right;color:var(--text-muted)" class="yr">${fmt(st.monthlySalary*12)}円</td>
+        <td>${storeData.staffTypes.length>1?`<button onclick="storeData.staffTypes.splice(${i},1);saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')))" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:4px 10px;border-radius:4px">削除</button>`:''}</td>
+      </tr>`).join('')}
+    </table>
+    <button onclick="storeData.staffTypes.push({name:'新規',monthlySalary:300000});saveStoreDebounced();renderSettings(document.getElementById('main-content'))" style="margin-top:8px;padding:6px 16px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;cursor:pointer;color:var(--accent-green);font-weight:600">+ 種別追加</button>
+    <button class="btn-primary" onclick="saveStaffTypes()" style="margin-top:8px;margin-left:8px">人材マスタ保存 (全シナリオ再計算)</button>
+    </div>`;
+
+    h+=`<div class="section"><h3><span style="background:var(--accent-blue)"></span>初期投資</h3>
+    <h4 style="margin:12px 0 8px;color:var(--accent-blue)">設備投資</h4>
+    <table style="width:100%;border-collapse:collapse;max-width:900px">
+      <tr style="color:var(--text-muted)"><th style="text-align:left;width:200px">項目名</th><th style="width:250px">詳細</th><th style="width:200px">金額</th><th style="width:250px">見積書PDF URL</th><th style="width:60px"></th></tr>
+      ${inv.equipment.map((e,i)=>`<tr>
+        <td><input type="text" value="${e.label}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%" onchange="storeData.investment.equipment[${i}].label=this.value;saveStoreDebounced()"></td>
+        <td><input type="text" value="${e.detail||''}" placeholder="業者名・内訳等" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.85rem" onchange="storeData.investment.equipment[${i}].detail=this.value||undefined;saveStoreDebounced()"></td>
+        <td><input type="text" value="${fmt(e.value)}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;text-align:right;font-size:0.95rem;min-width:160px" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="storeData.investment.equipment[${i}].value=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></td>
+        <td style="display:flex;gap:4px;align-items:center"><input type="text" value="${e.pdfUrl||''}" placeholder="https://drive.google.com/..." style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.8rem" onchange="storeData.investment.equipment[${i}].pdfUrl=this.value||undefined;saveStoreDebounced()">${e.pdfUrl?`<a href="${e.pdfUrl}" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;font-size:1.1rem;flex-shrink:0" title="見積書を開く">📄</a>`:''}</td>
+        <td><button onclick="storeData.investment.equipment.splice(${i},1);saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')))" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:6px 12px;border-radius:4px">削除</button></td>
+      </tr>`).join('')}
+    </table>
+    <button onclick="storeData.investment.equipment.push({label:'新規項目',value:0});saveStoreDebounced();renderSettings(document.getElementById('main-content'))" style="margin-top:8px;padding:8px 20px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:6px;cursor:pointer;color:var(--accent-blue);font-weight:600">+ 設備項目を追加</button>
+
+    <h4 style="margin:16px 0 8px;color:var(--accent-green)">運転資金</h4>
+    <table style="width:100%;border-collapse:collapse;max-width:900px">
+      <tr style="color:var(--text-muted)"><th style="text-align:left;width:200px">項目名</th><th style="width:250px">詳細</th><th style="width:200px">金額</th><th style="width:250px">見積書PDF URL</th><th style="width:60px"></th></tr>
+      ${inv.working.map((e,i)=>`<tr>
+        <td><input type="text" value="${e.label}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%" onchange="storeData.investment.working[${i}].label=this.value;saveStoreDebounced()"></td>
+        <td><input type="text" value="${e.detail||''}" placeholder="業者名・内訳等" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.85rem" onchange="storeData.investment.working[${i}].detail=this.value||undefined;saveStoreDebounced()"></td>
+        <td><input type="text" value="${fmt(e.value)}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;text-align:right;font-size:0.95rem;min-width:160px" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="storeData.investment.working[${i}].value=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></td>
+        <td style="display:flex;gap:4px;align-items:center"><input type="text" value="${e.pdfUrl||''}" placeholder="https://drive.google.com/..." style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.8rem" onchange="storeData.investment.working[${i}].pdfUrl=this.value||undefined;saveStoreDebounced()">${e.pdfUrl?`<a href="${e.pdfUrl}" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;font-size:1.1rem;flex-shrink:0" title="見積書を開く">📄</a>`:''}</td>
+        <td><button onclick="storeData.investment.working.splice(${i},1);saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')))" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:6px 12px;border-radius:4px">削除</button></td>
+      </tr>`).join('')}
+    </table>
+    <button onclick="storeData.investment.working.push({label:'新規項目',value:0});saveStoreDebounced();renderSettings(document.getElementById('main-content'))" style="margin-top:8px;padding:8px 20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;cursor:pointer;color:var(--accent-green);font-weight:600">+ 運転資金項目を追加</button>
+
+    <div class="fg" style="margin-top:16px">
+      <div><label>減価償却期間（月）</label><input type="number" id="dep-months" value="${inv.depreciationMonths}"></div>
+    </div>
+    <button class="btn-primary" onclick="saveInvestment()" style="margin-top:12px">投資額保存</button></div>`;
+  }else h+='<p style="color:var(--text-muted);padding:20px">閲覧権限のため設定変更不可</p>';
+  if(userRole==='admin'){
+    h+=`<div class="admin-panel"><h3>ユーザー管理</h3><div style="margin-bottom:12px"><input type="email" id="add-user-email" placeholder="メールアドレス" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);width:250px"><select id="add-user-role" style="padding:8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary)"><option value="viewer">viewer</option><option value="editor">editor</option><option value="admin">admin</option></select><button class="btn-primary" onclick="addUser()">追加</button></div><table class="user-table" id="user-table"><thead><tr><th>メール</th><th>名前</th><th>権限</th><th>操作</th></tr></thead><tbody></tbody></table></div>`;
+  }
+  h+='</div>';
+  el.innerHTML=h;
+  if(userRole==='admin')loadUsers();
+}
+
+function onMaster(key,val){storeData.master[key]=parseFloat(val)||0;saveStoreDebounced();}
+
+// ──────────────────────────────────────────────
+// 曜日別営業時間 ヘルパー
+// ──────────────────────────────────────────────
+const WEEK_DAYS=['月','火','水','木','金','土','日'];
+const WEEK_KEYS=['mon','tue','wed','thu','fri','sat','sun'];
+
+/** 30分刻みの時刻選択肢を生成（"09:00"〜"22:00" + "休み"） */
+function buildTimeOptions(selected){
+  let html='<option value="closed"'+(selected==='closed'?' selected':'')+'>(休み)</option>';
+  for(let h=8;h<=22;h++){
+    for(let m=0;m<60;m+=30){
+      const val=(h<10?'0':'')+h+':'+(m===0?'00':'30');
+      html+=`<option value="${val}"${selected===val?' selected':''}>${val}</option>`;
+    }
+  }
+  return html;
+}
+
+/** デフォルトの曜日別設定を返す（既存 openTime/closeTime から生成） */
+function defaultWeeklyHours(master){
+  const open=master.openTime||'09:00';
+  const close=master.closeTime||'18:00';
+  // 既存データを09:00形式に正規化
+  const normalizeT=t=>t&&t.length===4?'0'+t:t;
+  const o=normalizeT(open)||'09:00';
+  const c=normalizeT(close)||'18:00';
+  return {
+    mon:{open:o,close:c,breakMin:60},
+    tue:{open:o,close:c,breakMin:60},
+    wed:{open:o,close:c,breakMin:60},
+    thu:{open:o,close:c,breakMin:60},
+    fri:{open:o,close:c,breakMin:60},
+    sat:{open:'closed',close:c,breakMin:0},
+    sun:{open:'closed',close:c,breakMin:0},
+  };
+}
+
+/** master.weeklyHours から表示用サマリー文字列を生成 */
+function weeklyHoursSummary(master){
+  const wh=master.weeklyHours;
+  if(!wh)return (master.openTime||'9:00')+'〜'+(master.closeTime||'18:00');
+  const parts=WEEK_KEYS.map((k,i)=>{
+    const d=wh[k];
+    if(!d||d.open==='closed')return WEEK_DAYS[i]+':休';
+    return WEEK_DAYS[i]+': '+d.open+'〜'+d.close+(d.breakMin?'(休憩'+d.breakMin+'分)':'');
+  });
+  return parts.join(' / ');
+}
+
+/** 設定フォームの曜日別営業時間行を生成 */
+function buildWeeklyHoursRows(master){
+  const wh=master.weeklyHours||defaultWeeklyHours(master);
+  return WEEK_KEYS.map((k,i)=>{
+    const d=wh[k]||{open:'09:00',close:'18:00',breakMin:60};
+    const isClosed=d.open==='closed';
+    const disAttr=isClosed?' disabled style="opacity:0.35;pointer-events:none"':'';
+    return `<tr id="whr-${k}" style="${isClosed?'background:var(--bg-secondary)':''}">
+      <td style="padding:8px 10px;border:1px solid var(--border);font-weight:600;white-space:nowrap">${WEEK_DAYS[i]}曜</td>
+      <td style="padding:6px 8px;border:1px solid var(--border)">
+        <select onchange="onWeeklyHoursOpen('${k}',this.value)" style="padding:6px 8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.82rem;width:100%;min-width:90px">
+          ${buildTimeOptions(d.open)}
+        </select>
+      </td>
+      <td style="padding:6px 8px;border:1px solid var(--border)">
+        <select id="wh-close-${k}"${disAttr} onchange="onWeeklyHoursField('${k}','close',this.value)" style="padding:6px 8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.82rem;width:100%;min-width:90px">
+          ${buildTimeOptions(isClosed?d.close||'18:00':d.close)}
+        </select>
+      </td>
+      <td style="padding:6px 8px;border:1px solid var(--border)">
+        <input id="wh-break-${k}" type="number" min="0" max="240" step="15" value="${d.breakMin||0}"${disAttr} onchange="onWeeklyHoursField('${k}','breakMin',parseInt(this.value)||0)" style="padding:6px 8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-primary);font-size:0.82rem;width:80px"> 分
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+/** 開局時刻変更（"closed" のときは行をグレーアウト） */
+function onWeeklyHoursOpen(dayKey,val){
+  if(!storeData.master.weeklyHours)storeData.master.weeklyHours=defaultWeeklyHours(storeData.master);
+  storeData.master.weeklyHours[dayKey].open=val;
+  const isClosed=val==='closed';
+  const row=document.getElementById('whr-'+dayKey);
+  if(row){row.style.background=isClosed?'var(--bg-secondary)':'';}
+  ['close','break'].forEach(f=>{
+    const el=document.getElementById('wh-'+f+'-'+dayKey);
+    if(!el)return;
+    if(isClosed){el.disabled=true;el.style.opacity='0.35';el.style.pointerEvents='none';}
+    else{el.disabled=false;el.style.opacity='';el.style.pointerEvents='';}
+  });
+  saveStoreDebounced();
+}
+
+/** 閉局時刻・休憩時間変更 */
+function onWeeklyHoursField(dayKey,field,val){
+  if(!storeData.master.weeklyHours)storeData.master.weeklyHours=defaultWeeklyHours(storeData.master);
+  storeData.master.weeklyHours[dayKey][field]=val;
+  saveStoreDebounced();
+}
+
+// 科目構成の操作
+function addDeptMix(){
+  if(!storeData.master.deptMix)storeData.master.deptMix=[];
+  storeData.master.deptMix.push({dept:DEPT_NAMES[0],ratio:0});
+  renderSettings(document.getElementById('main-content'));
+  saveStoreDebounced();
+}
+function removeDeptMix(i){
+  storeData.master.deptMix.splice(i,1);
+  applyDeptMix();
+  renderSettings(document.getElementById('main-content'));
+  saveStoreDebounced();
+}
+function onDeptMixChange(i,field,val){
+  if(field==='ratio')storeData.master.deptMix[i].ratio=parseFloat(val)||0;
+  else storeData.master.deptMix[i].dept=val;
+  applyDeptMix();
+  renderSettings(document.getElementById('main-content'));
+  saveStoreDebounced();
+}
+function applyDeptMix(){
+  const mix=calcDeptMix(storeData.master.deptMix);
+  if(mix.totalRatio===100){
+    storeData.master.techFeePerRx=mix.techFeePerRx;
+    storeData.master.drugCostPerRx=mix.drugCostPerRx;
+  }
+}
+
+async function saveStaffTypes(){
+  storeData.scenarios.forEach(sc=>recalcScenario(sc,storeData.master,storeData.staffTypes));
+  await saveStoreImmediate();alert('人材マスタを保存し、全シナリオを再計算しました');renderContent();
+}
+async function saveMaster(){
+  applyDeptMix();
+  storeData.scenarios.forEach(sc=>recalcScenario(sc,storeData.master,storeData.staffTypes));
+  await saveStoreImmediate();alert('マスタを保存し、全シナリオを再計算しました');
+  renderContent();
+}
+async function saveInvestment(){
+  document.querySelectorAll('[data-inv]').forEach(inp=>{storeData.investment[inp.dataset.inv][+inp.dataset.idx].value=parseFloat(inp.value)||0;});
+  const d=document.getElementById('dep-months');if(d)storeData.investment.depreciationMonths=parseInt(d.value)||60;
+  await saveStoreImmediate();alert('保存しました');
+}
+function copyScenarioText(idx){
+  const sc=storeData.scenarios[idx];if(!sc)return;
+  const m=storeData.master,s=sc.settings,st=storeData.staffTypes||[];
+  const ti=getTotalInv(),inv=storeData.investment;
+  const an=getAnnual(sc.months),pb=getPayback(sc.months,ti),cum=sc.months.reduce((a,r)=>a+r.operatingProfit,0);
+  const mix=calcDeptMix(m.deptMix);
+  const opDays=m.operatingDays||25;
+  const marginRate=m.drugMarginRate!=null?m.drugMarginRate:0.05;
+
+  let t=`【事業計画】${storeData.name} - ${sc.name}シナリオ\n`;
+  t+=`作成日: ${new Date().toLocaleDateString('ja-JP')}\n\n`;
+
+  t+=`■ 店舗情報\n`;
+  t+=`門前科目: ${(m.deptMix||[]).map(d=>d.dept+'('+d.ratio+'%)').join(' / ')||'未設定'}\n`;
+  t+=`営業: 月${opDays}日 / ${weeklyHoursSummary(m)}\n`;
+  const techPrice=mix.totalRatio===100?mix.techFeePerRx:m.techFeePerRx;
+  const drugPrice=mix.totalRatio===100?mix.drugCostPerRx:m.drugCostPerRx;
+  t+=`技術料: ${fmt(techPrice)}円/枚 / 薬剤料: ${fmt(drugPrice)}円/枚\n`;
+  t+=`薬価差益率: ${(marginRate*100).toFixed(1)}% / 家賃: ${fmt(m.rent||s.rent)}円/月\n\n`;
+
+  t+=`■ 初期投資: ${fmtOku(ti)}\n`;
+  t+=`設備投資: ${fmtMY(inv.equipment.reduce((a,e)=>a+e.value,0))}\n`;
+  inv.equipment.forEach(e=>{if(e.value>0)t+=`  ${e.label}: ${fmt(e.value)}円\n`;});
+  t+=`運転資金: ${fmtMY(inv.working.reduce((a,e)=>a+e.value,0))}\n`;
+  inv.working.forEach(e=>{if(e.value>0)t+=`  ${e.label}: ${fmt(e.value)}円\n`;});
+  t+=`\n`;
+
+  t+=`■ 人材マスタ\n`;
+  st.forEach(s=>t+=`${s.name}: ${fmt(s.monthlySalary)}円/月 (年収${fmt(s.monthlySalary*12)}円)\n`);
+  t+=`\n`;
+
+  const confirmed=storeData.confirmedStaff||[];
+  if(confirmed.length){
+    t+=`\u25a0 \u5185\u5b9a\u8005\u60c5\u5831\n`;
+    confirmed.forEach(p=>t+=`${p.name}: ${p.store||'-'} / ${p.role||'-'} / ${p.status||'-'} / \u5165\u793e\u4e88\u5b9a ${p.plannedStart||'-'} ${p.note?'- '+p.note:''}\n`);
+    t+=`\n`;
+  }
+
+  t+=`\u25a0 KPI\n`;
+  t+=`投資回収: ${pb?Math.ceil(pb/12*10)/10+'年 ('+pb+'ヶ月)':'4年超'}\n`;
+  t+=`4年累計利益: ${fmtOku(cum)} (ROI ${ti>0?(cum/ti*100).toFixed(0):0}%)\n\n`;
+
+  t+=`■ 年間損益\n`;
+  t+=`年度\t売上高\t売上総利益\t営業利益\n`;
+  an.forEach(y=>t+=`${y.year}年目\t${fmtOku(y.revenue)}\t${fmtOku(y.grossProfit)}\t${fmtOku(y.operatingProfit)}\n`);
+  t+=`累計\t${fmtOku(an.reduce((a,y)=>a+y.revenue,0))}\t${fmtOku(an.reduce((a,y)=>a+y.grossProfit,0))}\t${fmtOku(cum)}\n\n`;
+
+  t+=`■ 月次データ（1年目）\n`;
+  t+=`月\t外来枚数\t在宅\t売上高\t粗利\t人件費\t営業利益\n`;
+  sc.months.filter(r=>r.year===1).forEach(r=>{
+    const rx=r.rxTotal||r.rxCount||0;
+    t+=`${r.month}\t${fmt(rx)}\t${r.homecareCount||0}\t${fmt(r.revenue)}\t${fmt(r.grossProfit)}\t${fmt(r.staffCost)}\t${fmt(r.operatingProfit)}\n`;
+  });
+
+  // コンプライアンス
+  const rx1=sc.months[0].rxTotal||sc.months[0].rxCount||0;
+  const daily=rx1>0?Math.ceil(rx1/opDays):0;
+  let phCount=0;st.forEach((s,i)=>{if(s.name.includes('薬剤師')||s.name.includes('マネージャー'))phCount+=(sc.months[0]['staff_'+i]||0);});
+  t+=`\n■ コンプライアンス\n`;
+  t+=`1日あたり: ${daily}枚 / 薬剤師${phCount}名 / 1人あたり${phCount>0?Math.ceil(daily/phCount):0}枚 (上限40枚)\n`;
+
+  navigator.clipboard.writeText(t).then(()=>alert('テキストをクリップボードにコピーしました。NotebookLMのソースやチャットに貼り付けてください。')).catch(()=>{
+    // fallback
+    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    alert('テキストをコピーしました。');
+  });
+}
+
+async function exportBusinessPlan(idx){
+  const sc=storeData.scenarios[idx];if(!sc)return;
+  const m=storeData.master,s=sc.settings,st=storeData.staffTypes||[];
+  const ti=getTotalInv(),inv=storeData.investment;
+  const an=getAnnual(sc.months),pb=getPayback(sc.months,ti),cum=sc.months.reduce((a,r)=>a+r.operatingProfit,0);
+  const mix=calcDeptMix(m.deptMix);
+  const opDays=m.operatingDays||25;
+  const marginRate=m.drugMarginRate!=null?m.drugMarginRate:0.05;
+  const techPrice=mix.totalRatio===100?mix.techFeePerRx:m.techFeePerRx;
+  const drugPrice=mix.totalRatio===100?mix.drugCostPerRx:m.drugCostPerRx;
+  const rentVal=m.rent!=null?m.rent:s.rent;
+  const costRatio=m.otherCostRatio!=null?m.otherCostRatio:s.otherCostRatio||0.08;
+
+  const w=window.open('','_blank');
+  let h=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+  <title>事業計画書 - ${storeData.name} - ${sc.name}</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Kosugi Maru',sans-serif;color:#222;padding:0;font-size:10pt;line-height:1.6}
+  @media print{
+    body{padding:0}
+    @page{size:A4;margin:15mm 12mm}
+    .page-break{page-break-before:always}
+    .no-print{display:none}
+    header,footer{position:fixed}
+    header{top:0;left:0;right:0;text-align:right;font-size:8pt;color:#999;padding:4px 12px;border-bottom:1px solid #ddd}
+    footer{bottom:0;left:0;right:0;text-align:center;font-size:7pt;color:#999;padding:4px 12px;border-top:1px solid #eee}
+  }
+  @media screen{
+    body{padding:40px;max-width:210mm;margin:0 auto;background:#f5f5f5}
+    .page{background:#fff;padding:30px 40px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1);border-radius:4px}
+    .no-print-btn{position:fixed;top:20px;right:20px;padding:12px 24px;background:#8b5cf6;color:#fff;border:none;border-radius:8px;font-size:14px;cursor:pointer;z-index:100;font-family:inherit}
+    .no-print-btn:hover{background:#7c3aed}
+  }
+  .cover{text-align:center;padding:120px 40px 80px}
+  .cover h1{font-size:28pt;color:#1a1a2e;margin-bottom:8px;letter-spacing:2px}
+  .cover .store-name{font-size:18pt;color:#8b5cf6;margin:20px 0 40px;font-weight:700}
+  .cover .meta{font-size:11pt;color:#666;line-height:2}
+  .cover .logo-line{margin-top:60px;padding-top:20px;border-top:2px solid #8b5cf6;font-size:12pt;color:#333;font-weight:700}
+  h2{font-size:13pt;margin:24px 0 10px;padding:6px 10px;background:linear-gradient(135deg,#f0e6ff,#e8f0fe);border-left:4px solid #8b5cf6;color:#1a1a2e}
+  h3{font-size:11pt;margin:14px 0 6px;color:#8b5cf6}
+  table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:14px}
+  th,td{border:1px solid #ccc;padding:5px 7px}
+  th{background:#f0f4f8;font-weight:600;text-align:center}
+  td{text-align:right}
+  td.label{text-align:left;font-weight:500}
+  .kpi-row{display:flex;gap:14px;margin:14px 0}
+  .kpi-box{flex:1;border:2px solid #8b5cf6;border-radius:8px;padding:14px;text-align:center}
+  .kpi-box .val{font-size:16pt;font-weight:800;color:#8b5cf6}
+  .kpi-box .lbl{font-size:8pt;color:#666}
+  .neg{color:#c00}.pos{color:#0a6}
+  .section-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .warn{color:#c00;font-weight:600}
+  .footer-note{margin-top:30px;text-align:right;font-size:8pt;color:#999;border-top:1px solid #eee;padding-top:8px}
+  .analysis-content{font-size:10pt;line-height:1.8;color:#333;padding:12px;background:#faf8ff;border:1px solid #e0d4f5;border-radius:6px}
+  .cumulative-table td.highlight{background:#f0e6ff;font-weight:700}
+  </style></head><body>`;
+
+  // 印刷ボタン（画面表示時のみ）
+  h+=`<button class="no-print-btn no-print" onclick="window.print()">🖨 印刷 / PDF保存</button>`;
+
+  // === 1. 表紙 ===
+  h+=`<div class="page cover">
+    <h1>事業計画書</h1>
+    <div class="store-name">${storeData.name}</div>
+    <div class="meta">
+      シナリオ: ${sc.name}<br>
+      作成日: ${new Date().toLocaleDateString('ja-JP')}<br>
+      対象期間: 4年間（48ヶ月）
+    </div>
+    <div class="logo-line">ワイズ株式会社</div>
+  </div>`;
+
+  // === 2. 物件概要 ===
+  const prop=storeData.property||{};
+  const propRent=prop.rent!=null?prop.rent:(m.rent!=null?m.rent:0);
+  h+=`<div class="page page-break">
+  <h2>2. 物件概要</h2>
+  <table>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">物件名</th><td style="text-align:left">${prop.name||'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">所在地</th><td style="text-align:left">${prop.address||'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">最寄駅</th><td style="text-align:left">${prop.nearestStation||'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">面積</th><td style="text-align:left">${prop.area||'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">賃料</th><td style="text-align:left">${fmt(propRent)}円/月</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">共益費</th><td style="text-align:left">${fmt(prop.commonFee||0)}円/月</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">保証金/敷金</th><td style="text-align:left">${fmt(prop.deposit||0)}円</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">契約期間</th><td style="text-align:left">${prop.contractPeriod||'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">管理会社</th><td style="text-align:left">${prop.managementCompany||'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">門前医療機関</th><td style="text-align:left">${prop.frontClinic||'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">想定処方箋枚数</th><td style="text-align:left">${prop.expectedRx?fmt(prop.expectedRx)+'枚/月':'―'}</td></tr>
+    <tr><th style="text-align:left;background:#e8f0fe;width:200px">特記事項</th><td style="text-align:left">${prop.note||'―'}</td></tr>
+  </table>
+  </div>`;
+
+  // === 3. 事業概要 ===
+  h+=`<div class="page page-break">
+  <h2>3. 事業概要</h2>
+  <div class="section-grid">
+    <div>
+      <h3>店舗情報</h3>
+      <table><tbody>
+        <tr><td class="label">店舗名</td><td class="label">${storeData.name}</td></tr>
+        <tr><td class="label">門前科目</td><td class="label">${(m.deptMix||[]).map(d=>d.dept+'（'+d.ratio+'%）').join(' / ')||'未設定'}</td></tr>
+        <tr><td class="label">営業日数</td><td class="label">月${opDays}日</td></tr>
+        <tr><td class="label">営業時間</td><td class="label">${weeklyHoursSummary(m)}</td></tr>
+        <tr><td class="label">シナリオ</td><td class="label">${sc.name}</td></tr>
+      </tbody></table>
+    </div>
+    <div>
+      <h3>投資概要</h3>
+      <table><tbody>
+        <tr><td class="label">初期投資総額</td><td>${fmtOku(ti)}</td></tr>
+        <tr><td class="label">設備投資</td><td>${fmt(inv.equipment.reduce((a,e)=>a+e.value,0))}円</td></tr>
+        <tr><td class="label">運転資金</td><td>${fmt(inv.working.reduce((a,e)=>a+e.value,0))}円</td></tr>
+        <tr><td class="label">投資回収</td><td>${pb?Math.ceil(pb/12*10)/10+'年（'+pb+'ヶ月）':'4年超'}</td></tr>
+      </tbody></table>
+    </div>
+  </div>`;
+
+  // === 4. 初期投資計画 ===
+  h+=`<h2>4. 初期投資計画</h2>
+  <div class="section-grid">
+    <div><h3>設備投資</h3><table><tbody>`;
+  inv.equipment.forEach(e=>h+=`<tr><td class="label">${e.label}${e.detail?'<br><span style="font-size:8pt;color:#666">'+e.detail+'</span>':''}${e.pdfUrl?' <a href="'+e.pdfUrl+'" target="_blank" style="font-size:8pt;color:#8b5cf6">[見積書]</a>':''}</td><td>${fmt(e.value)}円</td></tr>`);
+  h+=`<tr style="font-weight:700;background:#f0e6ff"><td class="label">設備計</td><td>${fmt(inv.equipment.reduce((a,e)=>a+e.value,0))}円</td></tr>`;
+  h+=`</tbody></table></div><div><h3>運転資金</h3><table><tbody>`;
+  inv.working.forEach(e=>h+=`<tr><td class="label">${e.label}${e.detail?'<br><span style="font-size:8pt;color:#666">'+e.detail+'</span>':''}${e.pdfUrl?' <a href="'+e.pdfUrl+'" target="_blank" style="font-size:8pt;color:#8b5cf6">[見積書]</a>':''}</td><td>${fmt(e.value)}円</td></tr>`);
+  h+=`<tr style="font-weight:700;background:#f0e6ff"><td class="label">運転資金計</td><td>${fmt(inv.working.reduce((a,e)=>a+e.value,0))}円</td></tr>`;
+  h+=`</tbody></table></div></div>
+  <table><tbody><tr style="font-weight:700;background:#f0e6ff;font-size:11pt"><td class="label">初期投資合計</td><td>${fmt(ti)}円（${fmtOku(ti)}）</td></tr></tbody></table>`;
+
+  // === 5. 単価マスタ ===
+  h+=`<h2>5. 単価マスタ</h2>
+  <table><thead><tr><th>項目</th><th>値</th><th>備考</th></tr></thead><tbody>
+    <tr><td class="label">技術料単価（外来）</td><td>${fmt(techPrice)}円/枚</td><td class="label">${(m.deptMix||[]).length>0?'科目加重平均':'手動設定'}</td></tr>
+    <tr><td class="label">薬剤料単価（外来）</td><td>${fmt(drugPrice)}円/枚</td><td class="label">${(m.deptMix||[]).length>0?'科目加重平均':'手動設定'}</td></tr>
+    <tr><td class="label">技術料単価（在宅）</td><td>${fmt(m.techFeePerHC)}円/件</td><td class="label"></td></tr>
+    <tr><td class="label">薬剤料単価（在宅）</td><td>${fmt(m.drugCostPerHC)}円/件</td><td class="label"></td></tr>
+    <tr><td class="label">薬価差益率</td><td>${(marginRate*100).toFixed(1)}%</td><td class="label">薬剤料に対する利益率</td></tr>
+    <tr><td class="label">地代家賃</td><td>${fmt(rentVal)}円/月</td><td class="label"></td></tr>
+    <tr><td class="label">その他経費率</td><td>${(costRatio*100).toFixed(1)}%</td><td class="label">対技術料</td></tr>
+  </tbody></table>`;
+
+  if((m.deptMix||[]).length>0){
+    h+=`<h3>科目構成</h3><table><thead><tr><th>科目</th><th>比率</th><th>技術料</th><th>薬剤料</th></tr></thead><tbody>`;
+    (m.deptMix||[]).forEach(d=>{
+      const dm=DEPT_MASTER[d.dept];
+      h+=`<tr><td class="label">${d.dept}</td><td>${d.ratio}%</td><td>${dm?fmt(dm.techFee):'-'}円</td><td>${dm?fmt(dm.drugCost):'-'}円</td></tr>`;
+    });
+    h+=`</tbody></table>`;
+  }
+  h+=`</div>`;
+
+  // === 6. 年間損益計画 ===
+  // 年間詳細データを月次から集計
+  const anDetail=[];
+  for(let yr=1;yr<=4;yr++){
+    const ym=sc.months.filter(r=>r.year===yr);
+    anDetail.push({year:yr,
+      revenue:ym.reduce((a,r)=>a+r.revenue,0),cogs:ym.reduce((a,r)=>a+r.cogs,0),
+      grossProfit:ym.reduce((a,r)=>a+r.grossProfit,0),staffCost:ym.reduce((a,r)=>a+r.staffCost,0),
+      rent:ym.reduce((a,r)=>a+r.rent,0),otherCost:ym.reduce((a,r)=>a+r.otherCost,0),
+      operatingProfit:ym.reduce((a,r)=>a+r.operatingProfit,0)});
+  }
+  h+=`<div class="page page-break">
+  <h2>6. 年間損益計画</h2>
+  <table><thead><tr><th>年度</th><th>売上高</th><th>仕入原価</th><th>売上総利益</th><th>人件費</th><th>地代家賃</th><th>その他経費</th><th>営業利益</th></tr></thead><tbody>`;
+  anDetail.forEach(y=>{
+    h+=`<tr><td>${y.year}年目</td><td>${fmtOku(y.revenue)}</td><td>${fmtOku(y.cogs)}</td><td>${fmtOku(y.grossProfit)}</td><td>${fmtOku(y.staffCost)}</td><td>${fmtOku(y.rent)}</td><td>${fmtOku(y.otherCost)}</td><td class="${y.operatingProfit>=0?'pos':'neg'}">${fmtOku(y.operatingProfit)}</td></tr>`;
+  });
+  h+=`<tr style="font-weight:700;background:#f0e6ff"><td>4年累計</td><td>${fmtOku(anDetail.reduce((a,y)=>a+y.revenue,0))}</td><td>${fmtOku(anDetail.reduce((a,y)=>a+y.cogs,0))}</td><td>${fmtOku(anDetail.reduce((a,y)=>a+y.grossProfit,0))}</td><td>${fmtOku(anDetail.reduce((a,y)=>a+y.staffCost,0))}</td><td>${fmtOku(anDetail.reduce((a,y)=>a+y.rent,0))}</td><td>${fmtOku(anDetail.reduce((a,y)=>a+y.otherCost,0))}</td><td class="${cum>=0?'pos':'neg'}">${fmtOku(cum)}</td></tr>`;
+  h+=`</tbody></table>`;
+
+  // KPI
+  h+=`<div class="kpi-row">
+    <div class="kpi-box"><div class="lbl">初期投資</div><div class="val">${fmtOku(ti)}</div></div>
+    <div class="kpi-box"><div class="lbl">4年目営業利益</div><div class="val ${an[3].operatingProfit>=0?'pos':'neg'}">${fmtOku(an[3].operatingProfit)}</div></div>
+    <div class="kpi-box"><div class="lbl">投資回収</div><div class="val">${pb?Math.ceil(pb/12*10)/10+'年':'4年超'}</div></div>
+    <div class="kpi-box"><div class="lbl">4年累計利益</div><div class="val ${cum>=0?'pos':'neg'}">${fmtOku(cum)}</div><div class="lbl">ROI ${ti>0?(cum/ti*100).toFixed(0):0}%</div></div>
+  </div>`;
+
+  // === 7. 月次損益計画（1年目） ===
+  h+=`<h2>7. 月次損益計画（1年目）</h2>
+  <table><thead><tr><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>粗利</th><th>人件費</th><th>家賃</th><th>他経費</th><th>営業利益</th></tr></thead><tbody>`;
+  sc.months.filter(r=>r.year===1).forEach(r=>{
+    const rx=r.rxTotal||r.rxCount||0;
+    h+=`<tr><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td></tr>`;
+  });
+  const y1=an[0];
+  h+=`<tr style="font-weight:700;background:#f0e6ff"><td>合計</td><td></td><td></td><td>${fmtOku(y1.revenue)}</td><td></td><td>${fmtOku(y1.grossProfit)}</td><td></td><td></td><td></td><td class="${y1.operatingProfit>=0?'pos':'neg'}">${fmtOku(y1.operatingProfit)}</td></tr>`;
+  h+=`</tbody></table>`;
+  h+=`</div>`;
+
+  // === 8. 月次損益計画（2〜4年目）四半期サマリ ===
+  h+=`<div class="page page-break">
+  <h2>8. 四半期損益計画（2〜4年目）</h2>`;
+  for(let yr=2;yr<=4;yr++){
+    const yrMonths=sc.months.filter(r=>r.year===yr);
+    h+=`<h3>${yr}年目</h3><table><thead><tr><th>四半期</th><th>外来枚数</th><th>在宅件数</th><th>売上高</th><th>粗利</th><th>人件費</th><th>営業利益</th></tr></thead><tbody>`;
+    for(let q=0;q<4;q++){
+      const qm=yrMonths.slice(q*3,(q+1)*3);
+      if(qm.length===0)continue;
+      const qRx=qm.reduce((a,r)=>a+(r.rxTotal||r.rxCount||0),0);
+      const qHc=qm.reduce((a,r)=>a+(r.homecareCount||0),0);
+      const qRev=qm.reduce((a,r)=>a+r.revenue,0);
+      const qGp=qm.reduce((a,r)=>a+r.grossProfit,0);
+      const qSc=qm.reduce((a,r)=>a+r.staffCost,0);
+      const qOp=qm.reduce((a,r)=>a+r.operatingProfit,0);
+      h+=`<tr><td>Q${q+1}</td><td>${fmt(qRx)}</td><td>${fmt(qHc)}</td><td>${fmt(qRev)}</td><td>${fmt(qGp)}</td><td>${fmt(qSc)}</td><td class="${qOp>=0?'pos':'neg'}">${fmt(qOp)}</td></tr>`;
+    }
+    const yrAn=an[yr-1];
+    h+=`<tr style="font-weight:700;background:#f0e6ff"><td>年計</td><td></td><td></td><td>${fmtOku(yrAn.revenue)}</td><td>${fmtOku(yrAn.grossProfit)}</td><td></td><td class="${yrAn.operatingProfit>=0?'pos':'neg'}">${fmtOku(yrAn.operatingProfit)}</td></tr>`;
+    h+=`</tbody></table>`;
+  }
+
+  // === 9. 投資回収計算 ===
+  h+=`<h2>9. 投資回収計算</h2>`;
+  h+=`<table class="cumulative-table"><thead><tr><th>経過月</th><th>月次営業利益</th><th>累積利益</th><th>投資残高</th><th>回収状況</th></tr></thead><tbody>`;
+  let cumProfit=0;let recovered=false;
+  sc.months.forEach((r,i)=>{
+    cumProfit+=r.operatingProfit;
+    const balance=ti-cumProfit;
+    const isRecovered=cumProfit>=ti&&!recovered;
+    if(isRecovered)recovered=true;
+    // 6ヶ月ごと or 回収月 or 最終月を表示
+    if((i+1)%6===0||isRecovered||i===sc.months.length-1||(i+1)<=3){
+      h+=`<tr${isRecovered?' class="highlight"':''}>
+        <td>${i+1}ヶ月目（${r.year}年目）</td>
+        <td>${fmt(r.operatingProfit)}</td>
+        <td class="${cumProfit>=0?'pos':'neg'}">${fmt(cumProfit)}</td>
+        <td class="${balance>0?'neg':'pos'}">${fmt(balance)}</td>
+        <td class="label">${isRecovered?'★ 回収完了':cumProfit>=ti?'回収済み':''}</td>
+      </tr>`;
+    }
+  });
+  h+=`</tbody></table>`;
+  h+=`<p style="margin-top:8px;font-size:9pt;color:#666">投資回収月数: <b>${pb?pb+'ヶ月（約'+Math.ceil(pb/12*10)/10+'年）':'4年超（未回収）'}</b> ／ 4年累計利益: <b>${fmtOku(cum)}</b> ／ ROI: <b>${ti>0?(cum/ti*100).toFixed(0):0}%</b></p>`;
+  h+=`</div>`;
+
+  // === 10. シナリオ分析 ===
+  const analysisHtml=analysisCache[idx]||sc.analysisHtml||'';
+  if(analysisHtml){
+    h+=`<div class="page page-break">
+    <h2>10. シナリオ分析</h2>
+    <div class="analysis-content">${analysisHtml}</div>
+    </div>`;
+  }
+
+  // === 11. スタッフ構成 ===
+  h+=`<div class="page ${analysisHtml?'page-break':''}">
+  <h2>${analysisHtml?'11':'10'}. スタッフ構成</h2>
+  <table><thead><tr><th>種別</th><th>月給</th><th>年収</th><th>1ヶ月目</th><th>12ヶ月目</th><th>24ヶ月目</th><th>48ヶ月目</th></tr></thead><tbody>`;
+  st.forEach((t,i)=>{
+    const m1=sc.months[0]?sc.months[0]['staff_'+i]||0:0;
+    const m12=sc.months[11]?sc.months[11]['staff_'+i]||0:0;
+    const m24=sc.months[23]?sc.months[23]['staff_'+i]||0:0;
+    const m48=sc.months[47]?sc.months[47]['staff_'+i]||0:0;
+    h+=`<tr><td class="label">${t.name}</td><td>${fmt(t.monthlySalary)}円</td><td>${fmt(t.monthlySalary*12)}円</td><td>${m1}名</td><td>${m12}名</td><td>${m24}名</td><td>${m48}名</td></tr>`;
+  });
+  h+=`</tbody></table>`;
+
+  // コンプライアンス
+  const rx1=sc.months[0].rxTotal||sc.months[0].rxCount||0;
+  const daily=rx1>0?Math.ceil(rx1/opDays):0;
+  let phCount=0;st.forEach((t,i)=>{if(t.name.includes('薬剤師')||t.name.includes('マネージャー'))phCount+=(sc.months[0]['staff_'+i]||0);});
+  const reqPh=daily>0?Math.ceil(daily/40):0;
+  h+=`<h3>コンプライアンス確認（1ヶ月目基準）</h3>
+  <table><tbody>
+    <tr><td class="label">1日あたり処方箋数</td><td>${daily}枚/日（月${fmt(rx1)}枚 ÷ ${opDays}日）</td></tr>
+    <tr><td class="label">薬剤師1人あたり上限</td><td>40枚/日</td></tr>
+    <tr><td class="label">必要薬剤師数</td><td>${reqPh}名</td></tr>
+    <tr><td class="label">配置薬剤師数</td><td>${phCount}名 ${phCount<reqPh?'<span class="warn">（'+(reqPh-phCount)+'名不足）</span>':'（充足）'}</td></tr>
+  </tbody></table>`;
+
+  h+=`<div class="footer-note">ワイズ株式会社 収益シミュレーション ダッシュボードより出力<br>${new Date().toLocaleString('ja-JP')}</div>`;
+  h+=`</div>`;
+
+  // === 参考資料: 図面 ===
+  try{
+    const drawSnap=await db.collection('store_drawings').where('store','==',storeData.name).orderBy('createdAt').get();
+    if(!drawSnap.empty){
+      const sectionNum=analysisHtml?'12':'11';
+      h+=`<div class="page page-break">
+      <h2>${sectionNum}. 参考資料（図面）</h2>`;
+      const catOrder=['内装','配置','設備','保健所','その他'];
+      const grouped={};
+      drawSnap.forEach(d=>{const data=d.data();const cat=data.category||'その他';if(!grouped[cat])grouped[cat]=[];grouped[cat].push(data);});
+      catOrder.forEach(cat=>{
+        if(!grouped[cat])return;
+        h+=`<h3>${cat}</h3>`;
+        grouped[cat].forEach(d=>{
+          const fileId=(d.driveUrl||'').match(/\/d\/([a-zA-Z0-9_-]+)/)?.[1]||(d.driveUrl||'').match(/[?&]id=([a-zA-Z0-9_-]+)/)?.[1];
+          h+=`<div style="margin-bottom:20px">
+            <p style="font-weight:600;margin-bottom:4px">${d.name||''}${d.note?' <span style="color:#666;font-weight:400">— '+d.note+'</span>':''}</p>`;
+          if(fileId){
+            h+=`<img src="https://drive.google.com/thumbnail?id=${fileId}&sz=w800" style="max-width:100%;border:1px solid #ccc;border-radius:4px" onerror="this.style.display='none';this.nextElementSibling.style.display='block">
+            <p style="display:none;color:#999;font-size:9pt">（画像を読み込めませんでした。<a href="${d.driveUrl}" target="_blank">Google Driveで開く</a>）</p>`;
+          }
+          h+=`</div>`;
+        });
+      });
+      h+=`</div>`;
+    }
+  }catch(e){console.warn('図面取得エラー:',e);}
+
+  h+=`</body></html>`;
+
+  w.document.write(h);
+  w.document.close();
+}
+
+function printSimulation(idx){
+  const sc=storeData.scenarios[idx];if(!sc)return;
+  const m=storeData.master,s=sc.settings,st=storeData.staffTypes||[];
+  const ti=getTotalInv(),inv=storeData.investment;
+  const an=getAnnual(sc.months),pb=getPayback(sc.months,ti),cum=sc.months.reduce((a,r)=>a+r.operatingProfit,0);
+  const mix=calcDeptMix(m.deptMix);
+  const opDays=m.operatingDays||25;
+  const marginRate=m.drugMarginRate!=null?m.drugMarginRate:0.05;
+  const techPrice=mix.totalRatio===100?mix.techFeePerRx:m.techFeePerRx;
+  const drugPrice=mix.totalRatio===100?mix.drugCostPerRx:m.drugCostPerRx;
+  const rentVal=m.rent!=null?m.rent:s.rent;
+
+  const w=window.open('','_blank');
+  let h=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+  <title>シミュレーション - ${storeData.name} - ${sc.name}</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Kosugi Maru',sans-serif;color:#222;padding:24px;font-size:9pt;line-height:1.5}
+  @media print{body{padding:0}@page{size:A4 landscape;margin:10mm 8mm}}
+  @media screen{body{max-width:297mm;margin:0 auto;background:#f5f5f5}
+    .page{background:#fff;padding:24px;margin-bottom:16px;box-shadow:0 2px 8px rgba(0,0,0,0.1);border-radius:4px}
+    .no-print-btn{position:fixed;top:16px;right:16px;padding:10px 20px;background:#1e8e3e;color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;z-index:100;font-family:inherit}
+    .no-print-btn:hover{background:#137333}
+  }
+  .no-print{display:block}@media print{.no-print{display:none}}
+  h1{font-size:14pt;text-align:center;margin-bottom:2px;color:#1a1a2e}
+  .subtitle{text-align:center;color:#666;margin-bottom:16px;font-size:9pt}
+  .params{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;font-size:8.5pt}
+  .param-box{background:#f8f9fa;border:1px solid #e0e0e0;border-radius:6px;padding:8px 10px}
+  .param-box .label{color:#666;font-size:7.5pt;margin-bottom:2px}
+  .param-box .val{font-weight:700;color:#1a73e8;font-size:10pt}
+  .kpi-row{display:flex;gap:12px;margin-bottom:16px}
+  .kpi-box{flex:1;border:2px solid #1a73e8;border-radius:8px;padding:10px;text-align:center}
+  .kpi-box .val{font-size:14pt;font-weight:800;color:#1a73e8}
+  .kpi-box .lbl{font-size:7.5pt;color:#666}
+  table{width:100%;border-collapse:collapse;font-size:7.5pt;margin-bottom:12px}
+  th,td{border:1px solid #ccc;padding:2px 4px}
+  th{background:#e8f0fe;font-weight:600;text-align:center;white-space:nowrap}
+  td{text-align:right;white-space:nowrap}
+  td.label{text-align:left;font-weight:500}
+  .neg{color:#c00;font-weight:600}.pos{color:#0a6;font-weight:600}
+  .yr-row{background:#e8f0fe;font-weight:700}
+  .yr-row td{border-top:2px solid #1a73e8;padding:4px}
+  .staff-section{margin-top:12px}
+  .staff-section table{font-size:8.5pt}
+  .footer{margin-top:16px;text-align:right;font-size:7.5pt;color:#999;border-top:1px solid #eee;padding-top:4px}
+  .page-break{page-break-before:always}
+  </style></head><body>`;
+
+  h+=`<button class="no-print-btn no-print" onclick="window.print()">🖨 印刷 / PDF保存</button>`;
+
+  // === ヘッダー ===
+  h+=`<div class="page">
+  <h1>収益シミュレーション</h1>
+  <div class="subtitle">ワイズ株式会社 ｜ ${storeData.name} ｜ ${sc.name} ｜ ${new Date().toLocaleDateString('ja-JP')}</div>`;
+
+  // === 前提シナリオ（トップ明記・2026-07-08 山内さん指示） ===
+  {
+    const _rx0=sc.months[0]?(sc.months[0].rxTotal||sc.months[0].rxCount||0):0;
+    const _last=sc.months[sc.months.length-1]||{};
+    const _rx48=_last.rxTotal||_last.rxCount||0;
+    const _hc48=_last.homecareCount||0;
+    h+=`<div style="border:2px solid #1a73e8;border-radius:8px;padding:8px 12px;margin-bottom:12px;background:#f0f6ff">
+      <span style="font-weight:700;color:#1a73e8">前提シナリオ：${sc.name}</span>
+      <span style="margin-left:8px">外来 ${fmt(_rx0)}枚/月（1日 ${fmt(Math.round(_rx0/opDays))}枚）→ ${fmt(_rx48)}枚/月（4年目・1日 ${fmt(Math.round(_rx48/opDays))}枚）${_hc48?` ／ 在宅 ${_hc48}件/月`:''} ｜ 門前 ${(m.deptMix||[]).map(d=>d.dept+'('+d.ratio+'%)').join('・')||'未設定'} ｜ 家賃 ${fmt(rentVal)}円/月・月${opDays}日 ｜ 初期投資 ${fmtOku(ti)}</span>
+    </div>`;
+  }
+
+  // === 前提条件 ===
+  h+=`<div class="params">
+    <div class="param-box"><div class="label">門前科目</div><div class="val" style="font-size:9pt">${(m.deptMix||[]).map(d=>d.dept+'('+d.ratio+'%)').join(' / ')||'未設定'}</div></div>
+    <div class="param-box"><div class="label">技術料 / 薬剤料（外来）</div><div class="val" style="font-size:9pt">${fmt(techPrice)} / ${fmt(drugPrice)}円</div></div>
+    <div class="param-box"><div class="label">薬価差益率 / 経費率</div><div class="val" style="font-size:9pt">${(marginRate*100).toFixed(1)}% / ${((m.otherCostRatio||s.otherCostRatio||0.08)*100).toFixed(1)}%</div></div>
+    <div class="param-box"><div class="label">家賃 / 営業日数</div><div class="val" style="font-size:9pt">${fmt(rentVal)}円 / 月${opDays}日</div></div>
+  </div>`;
+
+  // === KPI ===
+  h+=`<div class="kpi-row">
+    <div class="kpi-box"><div class="lbl">初期投資</div><div class="val">${fmtOku(ti)}</div></div>
+    <div class="kpi-box"><div class="lbl">4年目営業利益</div><div class="val ${an[3].operatingProfit>=0?'pos':'neg'}">${fmtOku(an[3].operatingProfit)}</div></div>
+    <div class="kpi-box"><div class="lbl">投資回収</div><div class="val">${pb?Math.ceil(pb/12*10)/10+'年':'4年超'}</div></div>
+    <div class="kpi-box"><div class="lbl">4年累計利益</div><div class="val ${cum>=0?'pos':'neg'}">${fmtOku(cum)}</div><div class="lbl">ROI ${ti>0?(cum/ti*100).toFixed(0):0}%</div></div>
+  </div>`;
+
+  // === 月次P/Lテーブル（48ヶ月） ===
+  h+=`<table><thead><tr><th>年</th><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>売上総利益</th><th>人件費</th><th>家賃</th><th>その他経費</th><th>減価償却</th><th>営業利益</th><th>累積利益</th>`;
+  st.forEach(t=>h+=`<th>${t.name}</th>`);
+  h+=`</tr></thead><tbody>`;
+
+  let cumProfit=0;
+  for(let yr=1;yr<=4;yr++){
+    const yrMonths=sc.months.filter(r=>r.year===yr);
+    yrMonths.forEach(r=>{
+      cumProfit+=r.operatingProfit;
+      const rx=r.rxTotal||r.rxCount||0;
+      h+=`<tr><td>${r.year}</td><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td>${fmt(r.depreciation||0)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td><td class="${cumProfit>=0?'pos':'neg'}">${fmt(cumProfit)}</td>`;
+      st.forEach((t,i)=>h+=`<td>${r['staff_'+i]||0}</td>`);
+      h+=`</tr>`;
+    });
+    // 年計行
+    const ya=an[yr-1];
+    h+=`<tr class="yr-row"><td colspan="2">${yr}年目計</td><td></td><td></td><td>${fmtOku(ya.revenue)}</td><td></td><td>${fmtOku(ya.grossProfit)}</td><td>${fmtOku(ya.staffCost)}</td><td></td><td></td><td>${fmtOku(yrMonths.reduce((a,r)=>a+(r.depreciation||0),0))}</td><td class="${ya.operatingProfit>=0?'pos':'neg'}">${fmtOku(ya.operatingProfit)}</td><td></td>`;
+    st.forEach(()=>h+=`<td></td>`);
+    h+=`</tr>`;
+  }
+  h+=`</tbody></table>`;
+
+  // === スタッフ単価 ===
+  h+=`<div class="staff-section"><table style="width:auto"><thead><tr><th>種別</th><th>月給</th></tr></thead><tbody>`;
+  st.forEach(t=>h+=`<tr><td class="label">${t.name}</td><td>${fmt(t.monthlySalary)}円</td></tr>`);
+  h+=`</tbody></table></div>`;
+  // \u5185\u5b9a\u8005\u60c5\u5831\u306f\u5370\u5237\u5bfe\u8c61\u304b\u3089\u9664\u5916\uff082026-07-08 \u5c71\u5185\u3055\u3093\u6307\u793a\u30fb\u500b\u4eba\u60c5\u5831\u306e\u305f\u3081\uff09
+
+  // === 初期投資内訳 ===
+  h+=`<div class="staff-section" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+  <div><table><thead><tr><th colspan="2">設備投資</th></tr></thead><tbody>`;
+  inv.equipment.forEach(e=>h+=`<tr><td class="label">${e.label}</td><td>${fmt(e.value)}円</td></tr>`);
+  h+=`<tr style="font-weight:700;background:#e8f0fe"><td class="label">計</td><td>${fmt(inv.equipment.reduce((a,e)=>a+e.value,0))}円</td></tr></tbody></table></div>
+  <div><table><thead><tr><th colspan="2">運転資金</th></tr></thead><tbody>`;
+  inv.working.forEach(e=>h+=`<tr><td class="label">${e.label}</td><td>${fmt(e.value)}円</td></tr>`);
+  h+=`<tr style="font-weight:700;background:#e8f0fe"><td class="label">計</td><td>${fmt(inv.working.reduce((a,e)=>a+e.value,0))}円</td></tr></tbody></table></div></div>`;
+
+  h+=`<div class="footer">ワイズ株式会社 収益シミュレーション ダッシュボードより出力 ｜ ${new Date().toLocaleString('ja-JP')}</div>`;
+  h+=`</div></body></html>`;
+
+  w.document.write(h);
+  w.document.close();
+}
+
+function printBusinessPlan(idx){
+  const sc=storeData.scenarios[idx];if(!sc)return;
+  const m=storeData.master,s=sc.settings,st=storeData.staffTypes||[];
+  const ti=getTotalInv(),inv=storeData.investment;
+  const an=getAnnual(sc.months),pb=getPayback(sc.months,ti),cum=sc.months.reduce((a,r)=>a+r.operatingProfit,0);
+  const mix=calcDeptMix(m.deptMix);
+  const opDays=m.operatingDays||25;
+  const marginRate=m.drugMarginRate!=null?m.drugMarginRate:0.05;
+
+  const w=window.open('','_blank');
+  let h=`<!DOCTYPE html><html lang="ja"><head><meta charset="UTF-8">
+  <title>事業計画書 - ${storeData.name} - ${sc.name}</title>
+  <style>
+  @import url('https://fonts.googleapis.com/css2?family=Kosugi+Maru&display=swap');
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Kosugi Maru',sans-serif;color:#222;padding:40px;font-size:11pt;line-height:1.6}
+  @media print{body{padding:20px}@page{size:A4;margin:15mm}}
+  h1{font-size:18pt;text-align:center;margin-bottom:4px;border-bottom:3px solid #1a73e8;padding-bottom:8px}
+  h2{font-size:13pt;margin:20px 0 8px;padding:4px 8px;background:#e8f0fe;border-left:4px solid #1a73e8}
+  h3{font-size:11pt;margin:12px 0 6px;color:#1a73e8}
+  .subtitle{text-align:center;color:#666;margin-bottom:20px;font-size:10pt}
+  table{width:100%;border-collapse:collapse;font-size:9pt;margin-bottom:12px}
+  th,td{border:1px solid #ccc;padding:4px 6px}
+  th{background:#f0f4f8;font-weight:600;text-align:center}
+  td{text-align:right}
+  td.label{text-align:left;font-weight:500}
+  .kpi-row{display:flex;gap:16px;margin:12px 0}
+  .kpi-box{flex:1;border:2px solid #1a73e8;border-radius:8px;padding:12px;text-align:center}
+  .kpi-box .val{font-size:16pt;font-weight:800;color:#1a73e8}
+  .kpi-box .lbl{font-size:8pt;color:#666}
+  .neg{color:#c00}
+  .pos{color:#0a6}
+  .section-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .warn{color:#c00;font-weight:600}
+  .footer{margin-top:30px;text-align:right;font-size:9pt;color:#999}
+  </style></head><body>`;
+
+  // ヘッダー
+  h+=`<h1>事業計画書</h1>
+  <div class="subtitle">ワイズ株式会社 ｜ ${storeData.name} ｜ シナリオ: ${sc.name} ｜ ${new Date().toLocaleDateString('ja-JP')}</div>`;
+
+  // 前提シナリオ（トップ明記・2026-07-08 山内さん指示）
+  {
+    const _rx0=sc.months[0]?(sc.months[0].rxTotal||sc.months[0].rxCount||0):0;
+    const _last=sc.months[sc.months.length-1]||{};
+    const _rx48=_last.rxTotal||_last.rxCount||0;
+    const _hc48=_last.homecareCount||0;
+    const _rent=m.rent!=null?m.rent:s.rent;
+    h+=`<div style="border:2px solid #1a73e8;border-radius:8px;padding:12px 16px;margin:8px 0 16px;background:#f0f6ff">
+      <div style="font-weight:700;color:#1a73e8;margin-bottom:4px">前提シナリオ：${sc.name}</div>
+      <div style="font-size:10pt;line-height:1.7">外来 ${fmt(_rx0)}枚/月（1日 ${fmt(Math.round(_rx0/opDays))}枚）スタート → ${fmt(_rx48)}枚/月（4年目・1日 ${fmt(Math.round(_rx48/opDays))}枚）${_hc48?` ／ 在宅 ${_hc48}件/月`:''}｜ 門前 ${(m.deptMix||[]).map(d=>d.dept+'（'+d.ratio+'%）').join(' / ')||'未設定'}｜ 家賃 ${fmt(_rent)}円/月・営業 月${opDays}日｜ 初期投資 ${fmtOku(ti)}</div>
+    </div>`;
+  }
+
+  // 事業概要
+  h+=`<h2>1. 事業概要</h2>
+  <div class="section-grid">
+    <div>
+      <h3>店舗情報</h3>
+      <table><tbody>
+        <tr><td class="label">店舗名</td><td class="label">${storeData.name}</td></tr>
+        <tr><td class="label">門前科目</td><td class="label">${(m.deptMix||[]).map(d=>d.dept+'（'+d.ratio+'%）').join(' / ')||'未設定'}</td></tr>
+        <tr><td class="label">営業日数</td><td class="label">月${opDays}日</td></tr>
+        <tr><td class="label">営業時間</td><td class="label">${weeklyHoursSummary(m)}</td></tr>
+      </tbody></table>
+    </div>
+    <div>
+      <h3>単価設定</h3>
+      <table><tbody>
+        <tr><td class="label">技術料（外来）</td><td>${fmt(mix.totalRatio===100?mix.techFeePerRx:m.techFeePerRx)}円/枚</td></tr>
+        <tr><td class="label">薬剤料（外来）</td><td>${fmt(mix.totalRatio===100?mix.drugCostPerRx:m.drugCostPerRx)}円/枚</td></tr>
+        <tr><td class="label">薬価差益率</td><td>${(marginRate*100).toFixed(1)}%</td></tr>
+        <tr><td class="label">地代家賃</td><td>${fmt(m.rent!=null?m.rent:s.rent)}円/月</td></tr>
+      </tbody></table>
+    </div>
+  </div>`;
+
+  // KPI
+  h+=`<h2>2. 主要指標（KPI）</h2>
+  <div class="kpi-row">
+    <div class="kpi-box"><div class="lbl">初期投資</div><div class="val">${fmtOku(ti)}</div></div>
+    <div class="kpi-box"><div class="lbl">4年目営業利益</div><div class="val ${an[3].operatingProfit>=0?'pos':'neg'}">${fmtOku(an[3].operatingProfit)}</div></div>
+    <div class="kpi-box"><div class="lbl">投資回収</div><div class="val">${pb?Math.ceil(pb/12*10)/10+'年':'4年超'}</div></div>
+    <div class="kpi-box"><div class="lbl">4年累計利益</div><div class="val ${cum>=0?'pos':'neg'}">${fmtOku(cum)}</div><div class="lbl">ROI ${ti>0?(cum/ti*100).toFixed(0):0}%</div></div>
+  </div>`;
+
+  // 初期投資内訳
+  h+=`<h2>3. 初期投資内訳</h2>
+  <div class="section-grid">
+    <div><h3>設備投資</h3><table><tbody>`;
+  inv.equipment.forEach(e=>h+=`<tr><td class="label">${e.label}${e.detail?`<br><span style="font-size:8pt;color:#666">${e.detail}</span>`:''}${e.pdfUrl?` <a href="${e.pdfUrl}" target="_blank" style="font-size:9pt;color:#1a73e8">[見積書]</a>`:''}</td><td>${fmt(e.value)}円</td></tr>`);
+  h+=`<tr style="font-weight:700;background:#e8f0fe"><td class="label">設備計</td><td>${fmt(inv.equipment.reduce((a,e)=>a+e.value,0))}円</td></tr>`;
+  h+=`</tbody></table></div><div><h3>運転資金</h3><table><tbody>`;
+  inv.working.forEach(e=>h+=`<tr><td class="label">${e.label}${e.detail?`<br><span style="font-size:8pt;color:#666">${e.detail}</span>`:''}${e.pdfUrl?` <a href="${e.pdfUrl}" target="_blank" style="font-size:9pt;color:#1a73e8">[見積書]</a>`:''}</td><td>${fmt(e.value)}円</td></tr>`);
+  h+=`<tr style="font-weight:700;background:#e8f0fe"><td class="label">運転資金計</td><td>${fmt(inv.working.reduce((a,e)=>a+e.value,0))}円</td></tr>`;
+  h+=`</tbody></table></div></div>`;
+
+  // 人員計画
+  h+=`<h2>4. 人員計画・月額人件費</h2><table><thead><tr><th>種別</th><th>月給</th><th>年収</th></tr></thead><tbody>`;
+  st.forEach(t=>h+=`<tr><td class="label">${t.name}</td><td>${fmt(t.monthlySalary)}円</td><td>${fmt(t.monthlySalary*12)}円</td></tr>`);
+  h+=`</tbody></table>
+  <p style="font-size:9pt;color:#666;margin-top:4px">※ 実際の配置人数は月次計画表で月ごとに設定</p>`;
+  // \u5185\u5b9a\u8005\u60c5\u5831\u306f\u5370\u5237\u5bfe\u8c61\u304b\u3089\u9664\u5916\uff082026-07-08 \u5c71\u5185\u3055\u3093\u6307\u793a\u30fb\u500b\u4eba\u60c5\u5831\u306e\u305f\u3081\uff09
+
+  // 年間P/L
+  h+=`<h2>5. 年間損益計画</h2><table><thead><tr><th>年度</th><th>売上高</th><th>売上総利益</th><th>営業利益</th></tr></thead><tbody>`;
+  an.forEach(y=>h+=`<tr><td>${y.year}年目</td><td>${fmtOku(y.revenue)}</td><td>${fmtOku(y.grossProfit)}</td><td class="${y.operatingProfit>=0?'pos':'neg'}">${fmtOku(y.operatingProfit)}</td></tr>`);
+  h+=`<tr style="font-weight:700;background:#e8f0fe"><td>4年累計</td><td>${fmtOku(an.reduce((a,y)=>a+y.revenue,0))}</td><td>${fmtOku(an.reduce((a,y)=>a+y.grossProfit,0))}</td><td class="${cum>=0?'pos':'neg'}">${fmtOku(cum)}</td></tr>`;
+  h+=`</tbody></table>`;
+
+  // 月次P/L（1年目のみ詳細）
+  h+=`<h2>6. 月次損益計画（1年目）</h2><table><thead><tr><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>粗利</th><th>人件費</th><th>家賃</th><th>他経費</th><th>減価償却</th><th>営業利益</th></tr></thead><tbody>`;
+  sc.months.filter(r=>r.year===1).forEach(r=>{
+    const rx=r.rxTotal||r.rxCount||0;
+    h+=`<tr><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td>${fmt(r.depreciation||0)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td></tr>`;
+  });
+  const y1=an[0];
+  h+=`<tr style="font-weight:700;background:#e8f0fe"><td>合計</td><td></td><td></td><td>${fmtOku(y1.revenue)}</td><td></td><td>${fmtOku(y1.grossProfit)}</td><td></td><td></td><td></td><td>${fmtOku(sc.months.filter(r=>r.year===1).reduce((a,r)=>a+(r.depreciation||0),0))}</td><td class="${y1.operatingProfit>=0?'pos':'neg'}">${fmtOku(y1.operatingProfit)}</td></tr>`;
+  h+=`</tbody></table>`;
+
+  // コンプライアンス
+  const rx1=sc.months[0].rxTotal||sc.months[0].rxCount||0;
+  const daily=rx1>0?Math.ceil(rx1/opDays):0;
+  let phCount=0;st.forEach((t,i)=>{if(t.name.includes('薬剤師')||t.name.includes('マネージャー'))phCount+=(sc.months[0]['staff_'+i]||0);});
+  const reqPh=daily>0?Math.ceil(daily/40):0;
+  h+=`<h2>7. コンプライアンス確認</h2>
+  <table><tbody>
+    <tr><td class="label">1日あたり処方箋数</td><td>${daily}枚/日（月${fmt(rx1)}枚 ÷ ${opDays}日）</td></tr>
+    <tr><td class="label">薬剤師1人あたり上限</td><td>40枚/日</td></tr>
+    <tr><td class="label">必要薬剤師数</td><td>${reqPh}名</td></tr>
+    <tr><td class="label">配置薬剤師数（1ヶ月目）</td><td>${phCount}名 ${phCount<reqPh?'<span class="warn">（'+( reqPh-phCount)+'名不足）</span>':'（充足）'}</td></tr>
+  </tbody></table>`;
+
+  h+=`<div class="footer">ワイズ株式会社 収益シミュレーション ダッシュボードより出力<br>${new Date().toLocaleString('ja-JP')}</div>`;
+  h+=`</body></html>`;
+
+  w.document.write(h);
+  w.document.close();
+  setTimeout(()=>w.print(),500);
+}
+
+async function loadUsers(){
+  const snap=await db.collection('store_sim_users').get();const tbody=document.querySelector('#user-table tbody');if(!tbody)return;tbody.innerHTML='';
+  snap.forEach(doc=>{const d=doc.data();const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${d.email}</td><td>${d.name||'-'}</td><td><select onchange="updateUserRole('${d.email}',this.value)" style="background:var(--bg-primary);border:1px solid var(--border);color:var(--text-primary);padding:4px;border-radius:4px"><option value="viewer" ${d.role==='viewer'?'selected':''}>viewer</option><option value="editor" ${d.role==='editor'?'selected':''}>editor</option><option value="admin" ${d.role==='admin'?'selected':''}>admin</option></select></td><td>${d.email!==currentUser.email?`<button class="btn-sm" onclick="removeUser('${d.email}')">削除</button>`:''}</td>`;
+    tbody.appendChild(tr);});
+}
+async function addUser(){const e=document.getElementById('add-user-email').value.trim(),r=document.getElementById('add-user-role').value;if(!e)return;await db.collection('store_sim_users').doc(e).set({email:e,name:'',role:r,createdAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});document.getElementById('add-user-email').value='';loadUsers();}
+async function updateUserRole(e,r){await db.collection('store_sim_users').doc(e).update({role:r})}
+function removeUser(email){showModal('ユーザー削除',`<p>${email} を削除しますか？</p>`,async()=>{await db.collection('store_sim_users').doc(email).delete();loadUsers();closeModal()});}
+</script>
+</body>
+</html>
