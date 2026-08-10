@@ -32,6 +32,12 @@ body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg-primary
 .user-info{display:flex;align-items:center;gap:8px;color:var(--text-secondary);font-size:0.85rem}
 .user-avatar{width:32px;height:32px;border-radius:50%;border:2px solid var(--accent-blue)}
 .role-badge{background:var(--accent-blue);color:#fff;padding:2px 8px;border-radius:10px;font-size:0.7rem;font-weight:600}
+.save-indicator{font-size:0.75rem;font-weight:600;padding:3px 10px;border-radius:10px}
+.save-indicator:empty{display:none;padding:0}
+.save-indicator.pending{background:rgba(227,116,0,0.12);color:var(--accent-amber)}
+.save-indicator.saving{background:rgba(26,115,232,0.12);color:var(--accent-blue)}
+.save-indicator.saved{background:rgba(30,142,62,0.12);color:var(--accent-green)}
+.save-indicator.error{background:rgba(217,48,37,0.14);color:var(--accent-red);cursor:pointer}
 .btn-sm{padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text-secondary);border-radius:var(--radius-sm);font-size:0.8rem;cursor:pointer;transition:all 0.2s}
 .btn-sm:hover{background:var(--bg-card-hover);color:var(--text-primary)}
 .btn-primary{padding:8px 20px;background:var(--gradient-blue);color:#fff;border:none;border-radius:var(--radius-sm);font-size:0.85rem;cursor:pointer;transition:all 0.2s}
@@ -174,7 +180,7 @@ body{font-family:'Kosugi Maru','Segoe UI',sans-serif;background:var(--bg-primary
     <a href="application.html" style="padding:10px 20px;color:rgba(255,255,255,0.8);text-decoration:none;font-size:13px;font-weight:500">📋 申請情報</a>
   </nav>
   <div class="header">
-    <div class="header-left"><div class="header-title">収益シミュレーション</div></div>
+    <div class="header-left"><div class="header-title">収益シミュレーション</div><span id="save-indicator" class="save-indicator" title="保存状態"></span></div>
     <div class="header-right">
       <div class="user-info"><img id="user-avatar" class="user-avatar" src="" alt=""><span id="user-name"></span><span id="role-badge" class="role-badge"></span></div>
       <button class="btn-sm" onclick="doLogout()">ログアウト</button>
@@ -416,6 +422,7 @@ function defaultInvestment(){
 let currentUser=null,userRole='viewer',canEdit=false;
 let storeList=[],currentStoreId=null,storeData=null;
 let charts={},saveTimer=null,activeTab='overview';
+let hasUnsavedChanges=false,saveGeneration=0;
 let detailsState={ov_invest:false,ov_master:false,ov_chart:true,sc_settings:true,sc_charts:true};
 let collapsedYears={};
 let analysisCache={};
@@ -529,10 +536,46 @@ async function loadStore(id){
   renderTabs();renderContent();
 }
 
-async function saveStoreDebounced(){
+// 保存状態インジケーター（画面上部ヘッダーに常時表示）
+function setSaveIndicator(state){
+  const el=document.getElementById('save-indicator');
+  if(!el)return;
+  el.className='save-indicator '+state;
+  if(state==='saving'){el.textContent='保存中…';el.onclick=null;}
+  else if(state==='saved'){el.textContent='✓ 保存済み';el.onclick=null;}
+  else if(state==='error'){el.textContent='⚠️ 保存エラー（クリックで再試行）';el.onclick=retrySaveNow;}
+  else if(state==='pending'){el.textContent='● 未保存の変更';el.onclick=null;}
+  else{el.textContent='';el.onclick=null;}
+}
+// 実際のFirestore書込本体（saveStoreDebouncedのdebounce満了時・再試行クリック時に呼ばれる）
+async function doStoreWrite(){
+  if(!canEdit||!storeData)return;
+  const myGen=saveGeneration;
+  setSaveIndicator('saving');
+  try{
+    const{id,...d}=storeData;
+    await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});
+    // 書込中にさらに新しい変更が来ていたら「保存済み」と表示しない（次のdebounceが追って保存する）
+    if(myGen===saveGeneration){hasUnsavedChanges=false;setSaveIndicator('saved');}
+    else{setSaveIndicator('pending');}
+  }catch(e){
+    console.error(e);
+    hasUnsavedChanges=true;
+    setSaveIndicator('error');
+  }
+}
+function retrySaveNow(){
   if(!canEdit||!storeData)return;
   clearTimeout(saveTimer);
-  saveTimer=setTimeout(async()=>{try{const{id,...d}=storeData;await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}catch(e){console.error(e);}},2000);
+  doStoreWrite();
+}
+async function saveStoreDebounced(){
+  if(!canEdit||!storeData)return;
+  hasUnsavedChanges=true;
+  saveGeneration++;
+  setSaveIndicator('pending');
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(doStoreWrite,800);
 }
 async function saveStoreNow(){
   if(!canEdit||!storeData)return;clearTimeout(saveTimer);
@@ -934,8 +977,8 @@ function renderDataTable(sc,scIdx){
         const cls=isPL?(v>=0?'pos':'neg'):'calc';
         h+=`<td class="${cls}">${col.suffix==='%'?(v||0).toFixed(1)+'%':fmt(v)}</td>`;
       }
-      else if(col.type==='input'&&canEdit)h+=`<td class="input-cell"><input type="number" value="${v||0}" data-k="${col.key}" data-s="${scIdx}" data-r="${ri}" onchange="onRowEdit(this)"></td>`;
-      else if(col.type==='input-text'&&canEdit)h+=`<td class="input-cell"><input type="text" value="${v||''}" data-k="${col.key}" data-s="${scIdx}" data-r="${ri}" onchange="onRowEdit(this)"></td>`;
+      else if(col.type==='input'&&canEdit)h+=`<td class="input-cell"><input type="number" value="${v||0}" data-k="${col.key}" data-s="${scIdx}" data-r="${ri}" onchange="onRowEdit(this)" oninput="onRowInput(this)"></td>`;
+      else if(col.type==='input-text'&&canEdit)h+=`<td class="input-cell"><input type="text" value="${v||''}" data-k="${col.key}" data-s="${scIdx}" data-r="${ri}" onchange="onRowEdit(this)" oninput="onRowInput(this)"></td>`;
       else h+=`<td>${col.type==='input-text'?(v||''):fmt(v||0)}</td>`;
     });
     h+='</tr>';
@@ -998,6 +1041,18 @@ function onRowEdit(el){
   saveStoreDebounced();
 }
 
+// データテーブルの入力中(oninput)は、再描画(calcRow/renderDataTable)を伴わずに
+// 生値だけをstoreDataへ書き込み、保存を予約する（フォーカス喪失を防ぐため）。
+// 集計列の再計算・再描画はonchange(blur/Enter/Tab)側のonRowEditが引き続き担当する。
+function onRowInput(el){
+  if(!canEdit||!storeData)return;
+  const key=el.dataset.k,si=+el.dataset.s,ri=+el.dataset.r;
+  const cols=buildCols(storeData.master,storeData.staffTypes);
+  const col=cols.find(c=>c.key===key);
+  storeData.scenarios[si].months[ri][key]=col&&col.type==='input-text'?el.value:(parseFloat(el.value)||0);
+  saveStoreDebounced();
+}
+
 // 各年の先頭月手入力セルを年内の残り月へ一括コピー（yearIdx=0始まり）
 function copyYear(scIdx,yearIdx){
   if(!canEdit||!storeData)return;
@@ -1023,6 +1078,34 @@ function copyYear(scIdx,yearIdx){
   renderDataTable(sc,scIdx);
   saveStoreDebounced();
 }
+
+// oninput委譲: onchangeで「storeDataへ直書き+saveStoreDebounced()予約」だけを行う単純な入力欄
+// （マスタ設定・物件情報・スタッフ種別・初期投資・営業時間）は、離脱時のデータ消失を防ぐため
+// input時点(打鍵毎)でも同じ処理を先行実行する。
+// 全面再描画を伴うハンドラ(onRowEdit=データテーブル本体/onDeptMixChange=科目構成)や
+// 別保存系統(eqUpd=備品・機材タブ、別Firestoreコレクション)は対象外
+// （フォーカス喪失・意図しない挙動・保存インジケーターの状態混線を避けるため）。
+document.getElementById('main-content').addEventListener('input',function(e){
+  const el=e.target;
+  if(!el||!el.matches||!el.matches('input,select,textarea'))return;
+  if(el.dataset&&el.dataset.k)return; // データテーブル本体はonRowInputで別途処理済み
+  const raw=el.getAttribute('onchange')||'';
+  if(!raw)return;
+  if(raw.indexOf('onRowEdit(')!==-1||raw.indexOf('onDeptMixChange(')!==-1||raw.indexOf('eqUpd(')!==-1)return;
+  const SAFE=['saveStoreDebounced()','onMaster(','onWeeklyHoursField(','onWeeklyHoursOpen('];
+  if(!SAFE.some(p=>raw.indexOf(p)!==-1))return;
+  if(typeof el.onchange==='function')el.onchange();
+});
+
+// beforeunloadガード: 未保存の変更（debounce待ち・書込中・書込失敗時）がある間だけ離脱確認を出す。
+// 保存済み(hasUnsavedChanges=false)なら確認は出さない。
+window.addEventListener('beforeunload',function(e){
+  if(hasUnsavedChanges){
+    e.preventDefault();
+    e.returnValue='';
+    return '';
+  }
+});
 
 // Excel-like arrow key navigation in data table
 document.addEventListener('keydown',function(e){
