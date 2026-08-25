@@ -590,6 +590,20 @@ function deleteStore(){if(!storeData||storeList.length<=1){alert('最後の店�
 function addScenario(){showModal('シナリオ追加','<input id="mi" placeholder="シナリオ名">',async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;const sc={name:n,settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()};recalcScenario(sc,storeData.master);storeData.scenarios.push(sc);await saveStoreImmediate();renderTabs();renderContent();closeModal();});}
 function renameScenario(i){showModal('シナリオ名変更',`<input id="mi" value="${storeData.scenarios[i].name}">`,async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;storeData.scenarios[i].name=n;await saveStoreImmediate();renderTabs();closeModal();});}
 function deleteScenario(i){if(storeData.scenarios.length<=1){alert('最後のシナリオは削除できません');return;}showModal('シナリオ削除',`<p>「${storeData.scenarios[i].name}」を削除しますか？</p><p style="color:var(--accent-red);font-size:0.85rem;margin-top:8px">⚠ この操作は元に戻せません。</p>`,async()=>{storeData.scenarios.splice(i,1);await saveStoreImmediate();activeTab='overview';renderTabs();renderContent();closeModal();});}
+// シナリオ複製: 選択中シナリオ(settings/months/analysisHtml等の全フィールド)をディープコピーし、新規シナリオとして末尾に追加する。元シナリオは一切変更しない。
+function duplicateScenario(i){
+  const src=storeData.scenarios[i];if(!src)return;
+  showModal('シナリオ複製',`<input id="mi" value="${src.name} のコピー">`,async()=>{
+    const n=document.getElementById('mi').value.trim();if(!n)return;
+    const sc=JSON.parse(JSON.stringify(src)); // 全フィールドを非破壊で複製（settings・months・analysisHtml等、将来追加されるフィールドも自動網羅）
+    sc.name=n;
+    delete sc.analysisHtml; // 分析結果は元シナリオの名前・数値に基づくキャッシュのため引き継がない（新シナリオとして再分析させる）
+    storeData.scenarios.push(sc);
+    activeTab='sc'+(storeData.scenarios.length-1); // 複製先を開いて確認・編集させる
+    await saveStoreImmediate();
+    renderTabs();renderContent();closeModal();
+  });
+}
 
 function showModal(t,b,ok){document.getElementById('modal-title').textContent=t;document.getElementById('modal-body').innerHTML=b;document.getElementById('modal').classList.add('show');document.getElementById('modal-ok').onclick=ok;setTimeout(()=>{const i=document.getElementById('mi');if(i)i.focus();},100);}
 function closeModal(){document.getElementById('modal').classList.remove('show');}
@@ -711,7 +725,7 @@ function renderScenario(el,idx){
   const s=sc.settings;
 
   let h=`<div class="toolbar"><span style="font-size:1rem;font-weight:600">${sc.name}</span>`;
-  if(canEdit)h+=`<button class="btn-icon" onclick="renameScenario(${idx})">&#9998;</button><button class="btn-icon" onclick="deleteScenario(${idx})" style="color:var(--accent-red)">&#10005;</button>`;
+  if(canEdit)h+=`<button class="btn-icon" onclick="renameScenario(${idx})">&#9998;</button><button class="btn-icon" onclick="duplicateScenario(${idx})" title="このシナリオを複製して新規作成">📑 複製</button><button class="btn-icon" onclick="deleteScenario(${idx})" style="color:var(--accent-red)">&#10005;</button>`;
   h+=`<button class="btn-icon" onclick="copyScenarioText(${idx})" style="margin-left:auto" title="テキストコピー">📋 コピー</button>`;
   if(storeData.master.notebookLmUrl)h+=`<a href="${storeData.master.notebookLmUrl}" target="_blank" class="btn-icon" style="text-decoration:none;color:var(--accent-cyan)" title="NotebookLMで開く">🔗 NotebookLM</a>`;
   h+=`<button class="btn-primary" style="background:linear-gradient(135deg,#1e8e3e,#137333)" onclick="printSimulation(${idx})">シミュレーション印刷</button>`;
