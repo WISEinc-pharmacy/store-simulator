@@ -1422,6 +1422,8 @@ function renderSettings(el){
     <button class="btn-primary" onclick="saveStaffTypes()" style="margin-top:8px;margin-left:8px">人材マスタ保存 (全シナリオ再計算)</button>
     </div>`;
 
+    const eqTotal=(inv.equipment||[]).reduce((a,e)=>a+(e.value||0),0);
+    const wkTotal=(inv.working||[]).reduce((a,e)=>a+(e.value||0),0);
     h+=`<div class="section"><h3><span style="background:var(--accent-blue)"></span>初期投資</h3>
     <h4 style="margin:12px 0 8px;color:var(--accent-blue)">設備投資</h4>
     <table style="width:100%;border-collapse:collapse;max-width:900px">
@@ -1429,12 +1431,13 @@ function renderSettings(el){
       ${inv.equipment.map((e,i)=>`<tr>
         <td><input type="text" value="${e.label}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%" onchange="storeData.investment.equipment[${i}].label=this.value;saveStoreDebounced()"></td>
         <td><input type="text" value="${e.detail||''}" placeholder="業者名・内訳等" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.85rem" onchange="storeData.investment.equipment[${i}].detail=this.value||undefined;saveStoreDebounced()"></td>
-        <td><input type="text" value="${fmt(e.value)}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;text-align:right;font-size:0.95rem;min-width:160px" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="storeData.investment.equipment[${i}].value=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></td>
+        <td><input type="text" value="${fmt(e.value)}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;text-align:right;font-size:0.95rem;min-width:160px" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="storeData.investment.equipment[${i}].value=parseFloat(unfmtInput(this.value))||0;updateInvSubtotals();recalcAllScenarios();saveStoreDebounced()"></td>
         <td style="display:flex;gap:4px;align-items:center"><input type="text" value="${e.pdfUrl||''}" placeholder="https://drive.google.com/..." style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.8rem" onchange="storeData.investment.equipment[${i}].pdfUrl=this.value||undefined;saveStoreDebounced()">${e.pdfUrl?`<a href="${e.pdfUrl}" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;font-size:1.1rem;flex-shrink:0" title="見積書を開く">📄</a>`:''}</td>
-        <td><button onclick="storeData.investment.equipment.splice(${i},1);saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')))" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:6px 12px;border-radius:4px">削除</button></td>
+        <td style="white-space:nowrap"><button ${i===0?'disabled':''} onclick="moveInvItem('equipment',${i},-1)" title="上へ" style="background:rgba(148,163,184,0.12);border:1px solid rgba(148,163,184,0.3);color:var(--text-primary);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:0.8rem">▲</button> <button ${i===inv.equipment.length-1?'disabled':''} onclick="moveInvItem('equipment',${i},1)" title="下へ" style="background:rgba(148,163,184,0.12);border:1px solid rgba(148,163,184,0.3);color:var(--text-primary);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:0.8rem">▼</button> <button onclick="storeData.investment.equipment.splice(${i},1);recalcAllScenarios();saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')))" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:6px 12px;border-radius:4px">削除</button></td>
       </tr>`).join('')}
     </table>
     <button onclick="storeData.investment.equipment.push({label:'新規項目',value:0});saveStoreDebounced();renderSettings(document.getElementById('main-content'))" style="margin-top:8px;padding:8px 20px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:6px;cursor:pointer;color:var(--accent-blue);font-weight:600">+ 設備項目を追加</button>
+    <div style="margin-top:8px;font-weight:700;color:var(--accent-blue)">設備投資 小計: <span id="inv-equip-subtotal">${fmt(eqTotal)}円</span></div>
 
     <h4 style="margin:16px 0 8px;color:var(--accent-green)">運転資金</h4>
     <table style="width:100%;border-collapse:collapse;max-width:900px">
@@ -1442,12 +1445,15 @@ function renderSettings(el){
       ${inv.working.map((e,i)=>`<tr>
         <td><input type="text" value="${e.label}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%" onchange="storeData.investment.working[${i}].label=this.value;saveStoreDebounced()"></td>
         <td><input type="text" value="${e.detail||''}" placeholder="業者名・内訳等" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.85rem" onchange="storeData.investment.working[${i}].detail=this.value||undefined;saveStoreDebounced()"></td>
-        <td><input type="text" value="${fmt(e.value)}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;text-align:right;font-size:0.95rem;min-width:160px" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="storeData.investment.working[${i}].value=parseFloat(unfmtInput(this.value))||0;saveStoreDebounced()"></td>
+        <td><input type="text" value="${fmt(e.value)}" style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;text-align:right;font-size:0.95rem;min-width:160px" onfocus="moneyFocus(this)" onblur="moneyBlur(this)" onchange="storeData.investment.working[${i}].value=parseFloat(unfmtInput(this.value))||0;updateInvSubtotals();saveStoreDebounced()"></td>
         <td style="display:flex;gap:4px;align-items:center"><input type="text" value="${e.pdfUrl||''}" placeholder="https://drive.google.com/..." style="padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);width:100%;font-size:0.8rem" onchange="storeData.investment.working[${i}].pdfUrl=this.value||undefined;saveStoreDebounced()">${e.pdfUrl?`<a href="${e.pdfUrl}" target="_blank" rel="noopener" style="color:var(--accent-blue);text-decoration:none;font-size:1.1rem;flex-shrink:0" title="見積書を開く">📄</a>`:''}</td>
-        <td><button onclick="storeData.investment.working.splice(${i},1);saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')))" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:6px 12px;border-radius:4px">削除</button></td>
+        <td style="white-space:nowrap"><button ${i===0?'disabled':''} onclick="moveInvItem('working',${i},-1)" title="上へ" style="background:rgba(148,163,184,0.12);border:1px solid rgba(148,163,184,0.3);color:var(--text-primary);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:0.8rem">▲</button> <button ${i===inv.working.length-1?'disabled':''} onclick="moveInvItem('working',${i},1)" title="下へ" style="background:rgba(148,163,184,0.12);border:1px solid rgba(148,163,184,0.3);color:var(--text-primary);cursor:pointer;padding:4px 8px;border-radius:4px;font-size:0.8rem">▼</button> <button onclick="storeData.investment.working.splice(${i},1);saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')))" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--accent-red);cursor:pointer;padding:6px 12px;border-radius:4px">削除</button></td>
       </tr>`).join('')}
     </table>
     <button onclick="storeData.investment.working.push({label:'新規項目',value:0});saveStoreDebounced();renderSettings(document.getElementById('main-content'))" style="margin-top:8px;padding:8px 20px;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:6px;cursor:pointer;color:var(--accent-green);font-weight:600">+ 運転資金項目を追加</button>
+    <div style="margin-top:8px;font-weight:700;color:var(--accent-green)">運転資金 小計: <span id="inv-working-subtotal">${fmt(wkTotal)}円</span></div>
+
+    <div style="margin-top:16px;padding:10px 14px;background:rgba(59,130,246,0.06);border-radius:8px;font-weight:700;font-size:1.05rem">初期投資 合計（設備＋運転）: <span id="inv-total" style="color:var(--accent-blue)">${fmt(eqTotal+wkTotal)}円</span></div>
 
     <div class="fg" style="margin-top:16px">
       <div><label>減価償却期間（月）</label><input type="number" id="dep-months" value="${inv.depreciationMonths}"></div>
@@ -1463,6 +1469,32 @@ function renderSettings(el){
 }
 
 function onMaster(key,val){storeData.master[key]=parseFloat(val)||0;saveStoreDebounced();}
+
+// 初期投資: 小計/合計表示の軽量更新（8/10改修方針に合わせ、フォーカス喪失を避けるため再描画せずDOMのtextContentのみ更新）
+function updateInvSubtotals(){
+  if(!storeData||!storeData.investment)return;
+  const inv=storeData.investment;
+  const eq=(inv.equipment||[]).reduce((a,e)=>a+(e.value||0),0);
+  const wk=(inv.working||[]).reduce((a,e)=>a+(e.value||0),0);
+  const elEq=document.getElementById('inv-equip-subtotal');if(elEq)elEq.textContent=fmt(eq)+'円';
+  const elWk=document.getElementById('inv-working-subtotal');if(elWk)elWk.textContent=fmt(wk)+'円';
+  const elTot=document.getElementById('inv-total');if(elTot)elTot.textContent=fmt(eq+wk)+'円';
+}
+// 設備投資額・償却月数の変更を月次P/Lの減価償却へ即時反映するため、全シナリオを再計算する（saveInvestment/設備投資onchange/削除ボタンから呼ぶ）
+function recalcAllScenarios(){
+  if(!storeData||!storeData.scenarios)return;
+  storeData.scenarios.forEach(sc=>recalcScenario(sc, storeData.master, storeData.staffTypes));
+}
+// 初期投資: 設備投資/運転資金の項目を隣と入れ替えて並び替える（配列順=保存順のためsaveStoreImmediateで確定させる）
+function moveInvItem(cat,i,dir){
+  if(!canEdit||!storeData||!storeData.investment)return;
+  const arr=storeData.investment[cat];
+  if(!Array.isArray(arr))return;
+  const j=i+dir;
+  if(j<0||j>=arr.length)return;
+  const tmp=arr[i];arr[i]=arr[j];arr[j]=tmp;
+  saveStoreImmediate().then(()=>renderSettings(document.getElementById('main-content')));
+}
 
 // ──────────────────────────────────────────────
 // 曜日別営業時間 ヘルパー
@@ -1603,6 +1635,7 @@ async function saveMaster(){
 async function saveInvestment(){
   document.querySelectorAll('[data-inv]').forEach(inp=>{storeData.investment[inp.dataset.inv][+inp.dataset.idx].value=parseFloat(inp.value)||0;});
   const d=document.getElementById('dep-months');if(d)storeData.investment.depreciationMonths=parseInt(d.value)||60;
+  recalcAllScenarios();
   await saveStoreImmediate();alert('保存しました');
 }
 function copyScenarioText(idx){
