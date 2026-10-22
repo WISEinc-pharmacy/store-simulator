@@ -538,13 +538,13 @@ async function loadStore(id){
 }
 
 // 保存状態インジケーター（画面上部ヘッダーに常時表示）
-function setSaveIndicator(state){
+function setSaveIndicator(state,detail){
   const el=document.getElementById('save-indicator');
   if(!el)return;
   el.className='save-indicator '+state;
   if(state==='saving'){el.textContent='保存中…';el.onclick=null;}
   else if(state==='saved'){el.textContent='✓ 保存済み';el.onclick=null;}
-  else if(state==='error'){el.textContent='⚠️ 保存エラー（クリックで再試行）';el.onclick=retrySaveNow;}
+  else if(state==='error'){el.textContent='⚠️ 保存エラー'+(detail?'：'+detail:'')+'（クリックで再試行）';el.title=detail||'';el.onclick=retrySaveNow;}
   else if(state==='pending'){el.textContent='● 未保存の変更';el.onclick=null;}
   else{el.textContent='';el.onclick=null;}
 }
@@ -560,9 +560,10 @@ async function doStoreWrite(){
     if(myGen===saveGeneration){hasUnsavedChanges=false;setSaveIndicator('saved');}
     else{setSaveIndicator('pending');}
   }catch(e){
-    console.error(e);
+    console.error('[store-sim save failed]',e&&e.code,e&&e.message,e);
     hasUnsavedChanges=true;
-    setSaveIndicator('error');
+    // 2026-10-22: 失敗理由（Firestoreのエラーコードとメッセージ）を画面にも出す。DevToolsを開かなくても原因が分かるようにする
+    setSaveIndicator('error',((e&&e.code)?e.code+' ':'')+String((e&&e.message)||e||'').slice(0,120));
   }
 }
 function retrySaveNow(){
