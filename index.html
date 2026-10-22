@@ -260,19 +260,20 @@ const DEFAULT_STAFF_TYPES=[
   {name:'訪問薬剤師',monthlySalary:460000},
 ];
 
-const DEFAULT_CONFIRMED_STAFF=[
-  {name:'管理薬剤師（氏名非公開）',store:'越谷',role:'管理薬剤師',status:'入社確定',plannedStart:'2026-08-01',note:'越谷管薬想定。本人直接連絡フェーズ。'},
-  {name:'EMリーダー（氏名非公開）',store:'清瀬',role:'EMリーダー',status:'入社確定',plannedStart:'2026-08-01目標',note:'清瀬EMリーダー。入社日確定待ち。'},
-];
+// 2026-10-22: 既定の入社確定スタッフは廃止（空配列）。以前は越谷・清瀬の2名分を既定で持ち、保存データへ名前一致で
+// 合流させていたが、公開リポの実名匿名化（8deaf92）で既定側の名前だけ「（氏名非公開）」に変わり、Firestore に保存済みの
+// 実名の行と一致しなくなって同じ人物が2行表示された。入社確定スタッフの正本は Firestore の保存データのみとする。
+const DEFAULT_CONFIRMED_STAFF=[];
 
 function cloneConfirmedStaff(){return JSON.parse(JSON.stringify(DEFAULT_CONFIRMED_STAFF));}
 function ensureConfirmedStaff(data){
   if(!data.confirmedStaff)data.confirmedStaff=[];
-  DEFAULT_CONFIRMED_STAFF.forEach(def=>{
-    const existing=data.confirmedStaff.find(p=>p.name===def.name);
-    if(existing){
-      Object.keys(def).forEach(k=>{if(existing[k]===undefined||existing[k]==='')existing[k]=def[k];});
-    }else data.confirmedStaff.push({...def});
+  // 旧既定行（「（氏名非公開）」の仮名行）が保存データに混入している場合、同じ店舗×役職の実名行があれば仮名行を取り除く
+  // （2026-10-22 の二重表示の後始末。実名行が無い場合は仮名行をそのまま残す＝情報を失わない）。
+  const isPlaceholder=p=>typeof p.name==='string'&&p.name.includes('（氏名非公開）');
+  data.confirmedStaff=data.confirmedStaff.filter(p=>{
+    if(!isPlaceholder(p))return true;
+    return !data.confirmedStaff.some(q=>q!==p&&!isPlaceholder(q)&&q.store===p.store&&q.role===p.role);
   });
 }
 
