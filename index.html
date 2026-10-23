@@ -311,7 +311,10 @@ function buildCols(master, staffTypes){
   cols.push({key:'rent',label:'⑮地代家賃',type:'calc',formula:'マスタ固定'});
   cols.push({key:'otherCost',label:'⑯その他経費',type:'calc',formula:'(⑥+⑧)×経費率'});
   cols.push({key:'depreciation',label:'⑰減価償却',type:'calc',formula:'設備投資÷償却月数'});
-  cols.push({key:'operatingProfit',label:'⑱営業利益',type:'calc',formula:'⑬-⑭-⑮-⑯-⑰'});
+  cols.push({key:'operatingProfit',label:'⑱営業利益（小計）',type:'calc',formula:'⑬-⑭-⑮-⑯-⑰'});
+  // 本部経費・内部留保（店舗按分）: 予実表budget-toolと同じ定義（役員経費＋本部経費＋内部留保）。店舗単位の入力（既定0・負数不可はcalcRowで補正）。
+  cols.push({key:'hqAlloc',label:'⑲本部経費・内部留保（店舗按分）',type:'input',formula:'入力',note:'本部経費（按分）＝役員経費＋本部経費＋内部留保（予実表budget-toolと同じ定義）'});
+  cols.push({key:'operAfterHq',label:'⑳営業利益（按分後）',type:'calc',formula:'⑱-⑲'});
   cols.push({key:'note',label:'備考',type:'input-text'});
   return cols;
 }
@@ -373,8 +376,15 @@ function calcRow(r, master, settings, staffTypes){
     r.depreciation=Math.round(_equipTotal/_depMonths);
   }
 
-  // 営業利益
+  // 営業利益（小計）
   r.operatingProfit=r.grossProfit-r.staffCost-r.rent-r.otherCost-r.depreciation;
+
+  // 本部経費・内部留保（店舗按分）: 未入力(undefined/null/NaN)は0扱い、負数は0に補正する。
+  // 既存保存データ（このフィールド追加前）の月もここで必ず数値化されるため、ロード時の別途マイグレーションは不要。
+  // undefinedのまま保存に流さない（INC-666: 配列内undefinedでFirestore保存が全面停止した直後のため）。
+  r.hqAlloc=Math.max(0,Number(r.hqAlloc)||0);
+  // 営業利益（按分後）＝営業利益（小計）－本部経費・内部留保（店舗按分）
+  r.operAfterHq=r.operatingProfit-r.hqAlloc;
 
   return r;
 }
@@ -676,7 +686,7 @@ function moneyBlur(el){el.value=fmtInput(el.value)}
 function fmtMY(n){if(n==null)return'-';return(n<0?'-':'')+Math.abs(Math.round(n/10000)).toLocaleString()+'万円'}
 function fmtOku(n){if(n==null)return'-';if(Math.abs(n)>=1e8)return(n/1e8).toFixed(2)+'億円';return fmtMY(n)}
 function getTotalInv(){const i=storeData.investment;return i.equipment.reduce((s,e)=>s+e.value,0)+i.working.reduce((s,e)=>s+e.value,0)}
-function getAnnual(ms){const y=[];for(let i=1;i<=4;i++){const m=ms.filter(r=>r.year===i);y.push({year:i,revenue:m.reduce((s,r)=>s+r.revenue,0),grossProfit:m.reduce((s,r)=>s+r.grossProfit,0),operatingProfit:m.reduce((s,r)=>s+r.operatingProfit,0)});}return y;}
+function getAnnual(ms){const y=[];for(let i=1;i<=4;i++){const m=ms.filter(r=>r.year===i);y.push({year:i,revenue:m.reduce((s,r)=>s+r.revenue,0),grossProfit:m.reduce((s,r)=>s+r.grossProfit,0),operatingProfit:m.reduce((s,r)=>s+r.operatingProfit,0),hqAlloc:m.reduce((s,r)=>s+(r.hqAlloc||0),0),operAfterHq:m.reduce((s,r)=>s+(r.operAfterHq||0),0)});}return y;}
 function getPayback(ms,inv){let c=-inv;for(let i=0;i<ms.length;i++){c+=ms[i].operatingProfit;if(c>=0)return i+1;}return null;}
 function chartOpts(){return{responsive:true,maintainAspectRatio:false,interaction:{intersect:false,mode:'index'},plugins:{legend:{labels:{color:'#5f6368',usePointStyle:true,pointStyleWidth:8}},tooltip:{callbacks:{label:c=>c.dataset.label+': '+fmtMY(c.raw)}}},scales:{x:{ticks:{color:'#5f6368',maxTicksLimit:12},grid:{color:'rgba(218,220,224,0.5)'}},y:{ticks:{color:'#5f6368',callback:v=>fmtMY(v)},grid:{color:'rgba(218,220,224,0.5)'}}}}}
 const COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#ec4899','#84cc16'];
@@ -1006,7 +1016,8 @@ function renderDataTable(sc,scIdx){
   cols.forEach(c=>{
     const isInput=c.type==='input'||c.type==='input-text';
     const formulaSub=c.formula?`<br><span style="font-size:0.65rem;font-weight:400;color:var(--text-muted)">${c.formula}</span>`:'';
-    h+=`<th class="${isInput?'input-hdr':''}">${c.label}${formulaSub}</th>`;
+    const titleAttr=c.note?` title="${c.note}"`:'';
+    h+=`<th class="${isInput?'input-hdr':''}"${titleAttr}>${c.label}${formulaSub}</th>`;
   });
   h+='</tr></thead><tbody>';
   let prev=0;
@@ -1019,7 +1030,7 @@ function renderDataTable(sc,scIdx){
       const v=row[col.key];
       if(col.type==='fixed')h+=`<td class="lbl">${col.key==='year'?v+'年目':v}</td>`;
       else if(col.type==='calc'){
-        const isPL=col.key==='operatingProfit';
+        const isPL=col.key==='operatingProfit'||col.key==='operAfterHq';
         const cls=isPL?(v>=0?'pos':'neg'):'calc';
         h+=`<td class="${cls}">${col.suffix==='%'?(v||0).toFixed(1)+'%':fmt(v)}</td>`;
       }
@@ -1054,6 +1065,12 @@ function yrRow(ms,yr,cols){
     if(col.type==='fixed')return;
     if(col.type==='input-text'){h+='<td></td>';return;}
     if(col.type==='input'){
+      if(col.key==='hqAlloc'){
+        // 本部経費・内部留保（店舗按分）は他の入力列（平均表示）と異なり年間「合計」で表示する（費用項目のため。営業利益（小計）の年合計－本列の年合計＝営業利益（按分後）の年合計が成り立つ）
+        const sum=ym.reduce((s,m)=>s+(m[col.key]||0),0);
+        h+=`<td class="calc">${fmt(sum)}</td>`;
+        return;
+      }
       // 入力列は平均値表示
       const avg=ym.reduce((s,m)=>s+(m[col.key]||0),0)/ym.length;
       h+=`<td class="lbl">${avg%1===0?fmt(avg):avg.toFixed(1)}</td>`;
@@ -1065,7 +1082,7 @@ function yrRow(ms,yr,cols){
       h+=`<td class="calc">${avg.toFixed(1)}%</td>`;
     }else{
       const t=ym.reduce((s,m)=>s+(m[col.key]||0),0);
-      const cls=col.key==='operatingProfit'?(t>=0?'pos':'neg'):'calc';
+      const cls=(col.key==='operatingProfit'||col.key==='operAfterHq')?(t>=0?'pos':'neg'):'calc';
       h+=`<td class="${cls}">${fmt(t)}</td>`;
     }
   });
@@ -2136,7 +2153,8 @@ function printSimulation(idx){
   </div>`;
 
   // === 月次P/Lテーブル（48ヶ月） ===
-  h+=`<table><thead><tr><th>年</th><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>売上総利益</th><th>人件費</th><th>家賃</th><th>その他経費</th><th>減価償却</th><th>営業利益</th><th>累積利益</th>`;
+  // 本部経費・内部留保（店舗按分）/営業利益（按分後）: A4横のnowrap列が既に多いため見出しは短縮表記（既存の「地代家賃」→「家賃」等の省略規約に合わせる）。
+  h+=`<table><thead><tr><th>年</th><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>売上総利益</th><th>人件費</th><th>家賃</th><th>その他経費</th><th>減価償却</th><th>営業利益(小計)</th><th>本部経費按分</th><th>営業利益(按分後)</th><th>累積利益</th>`;
   st.forEach(t=>h+=`<th>${t.name}</th>`);
   h+=`</tr></thead><tbody>`;
 
@@ -2146,17 +2164,18 @@ function printSimulation(idx){
     yrMonths.forEach(r=>{
       cumProfit+=r.operatingProfit;
       const rx=r.rxTotal||r.rxCount||0;
-      h+=`<tr><td>${r.year}</td><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td>${fmt(r.depreciation||0)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td><td class="${cumProfit>=0?'pos':'neg'}">${fmt(cumProfit)}</td>`;
+      h+=`<tr><td>${r.year}</td><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td>${fmt(r.depreciation||0)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td><td>${fmt(r.hqAlloc||0)}</td><td class="${(r.operAfterHq||0)>=0?'pos':'neg'}">${fmt(r.operAfterHq||0)}</td><td class="${cumProfit>=0?'pos':'neg'}">${fmt(cumProfit)}</td>`;
       st.forEach((t,i)=>h+=`<td>${r['staff_'+i]||0}</td>`);
       h+=`</tr>`;
     });
     // 年計行
     const ya=an[yr-1];
-    h+=`<tr class="yr-row"><td colspan="2">${yr}年目計</td><td></td><td></td><td>${fmtOku(ya.revenue)}</td><td></td><td>${fmtOku(ya.grossProfit)}</td><td>${fmtOku(ya.staffCost)}</td><td></td><td></td><td>${fmtOku(yrMonths.reduce((a,r)=>a+(r.depreciation||0),0))}</td><td class="${ya.operatingProfit>=0?'pos':'neg'}">${fmtOku(ya.operatingProfit)}</td><td></td>`;
+    h+=`<tr class="yr-row"><td colspan="2">${yr}年目計</td><td></td><td></td><td>${fmtOku(ya.revenue)}</td><td></td><td>${fmtOku(ya.grossProfit)}</td><td>${fmtOku(ya.staffCost)}</td><td></td><td></td><td>${fmtOku(yrMonths.reduce((a,r)=>a+(r.depreciation||0),0))}</td><td class="${ya.operatingProfit>=0?'pos':'neg'}">${fmtOku(ya.operatingProfit)}</td><td>${fmtOku(ya.hqAlloc)}</td><td class="${ya.operAfterHq>=0?'pos':'neg'}">${fmtOku(ya.operAfterHq)}</td><td></td>`;
     st.forEach(()=>h+=`<td></td>`);
     h+=`</tr>`;
   }
   h+=`</tbody></table>`;
+  h+=`<p style="font-size:7.5pt;color:#666;margin:-6px 0 12px">※本部経費（按分）＝役員経費＋本部経費＋内部留保（予実表budget-toolと同じ定義）</p>`;
 
   // === スタッフ単価 ===
   h+=`<div class="staff-section"><table style="width:auto"><thead><tr><th>種別</th><th>月給</th></tr></thead><tbody>`;
@@ -2291,14 +2310,15 @@ function printBusinessPlan(idx){
   h+=`</tbody></table>`;
 
   // 月次P/L（1年目のみ詳細）
-  h+=`<h2>6. 月次損益計画（1年目）</h2><table><thead><tr><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>粗利</th><th>人件費</th><th>家賃</th><th>他経費</th><th>減価償却</th><th>営業利益</th></tr></thead><tbody>`;
+  h+=`<h2>6. 月次損益計画（1年目）</h2><table><thead><tr><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>粗利</th><th>人件費</th><th>家賃</th><th>他経費</th><th>減価償却</th><th>営業利益（小計）</th><th>本部経費・内部留保（店舗按分）</th><th>営業利益（按分後）</th></tr></thead><tbody>`;
   sc.months.filter(r=>r.year===1).forEach(r=>{
     const rx=r.rxTotal||r.rxCount||0;
-    h+=`<tr><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td>${fmt(r.depreciation||0)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td></tr>`;
+    h+=`<tr><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td>${fmt(r.depreciation||0)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td><td>${fmt(r.hqAlloc||0)}</td><td class="${(r.operAfterHq||0)>=0?'pos':'neg'}">${fmt(r.operAfterHq||0)}</td></tr>`;
   });
   const y1=an[0];
-  h+=`<tr style="font-weight:700;background:#e8f0fe"><td>合計</td><td></td><td></td><td>${fmtOku(y1.revenue)}</td><td></td><td>${fmtOku(y1.grossProfit)}</td><td></td><td></td><td></td><td>${fmtOku(sc.months.filter(r=>r.year===1).reduce((a,r)=>a+(r.depreciation||0),0))}</td><td class="${y1.operatingProfit>=0?'pos':'neg'}">${fmtOku(y1.operatingProfit)}</td></tr>`;
+  h+=`<tr style="font-weight:700;background:#e8f0fe"><td>合計</td><td></td><td></td><td>${fmtOku(y1.revenue)}</td><td></td><td>${fmtOku(y1.grossProfit)}</td><td></td><td></td><td></td><td>${fmtOku(sc.months.filter(r=>r.year===1).reduce((a,r)=>a+(r.depreciation||0),0))}</td><td class="${y1.operatingProfit>=0?'pos':'neg'}">${fmtOku(y1.operatingProfit)}</td><td>${fmtOku(y1.hqAlloc)}</td><td class="${y1.operAfterHq>=0?'pos':'neg'}">${fmtOku(y1.operAfterHq)}</td></tr>`;
   h+=`</tbody></table>`;
+  h+=`<p style="font-size:8pt;color:#666;margin:-8px 0 12px">※本部経費（按分）＝役員経費＋本部経費＋内部留保（予実表budget-toolと同じ定義）</p>`;
 
   // コンプライアンス
   const rx1=sc.months[0].rxTotal||sc.months[0].rxCount||0;
