@@ -1939,14 +1939,15 @@ async function exportBusinessPlan(idx){
 
   // === 7. 月次損益計画（1年目） ===
   h+=`<h2>7. 月次損益計画（1年目）</h2>
-  <table><thead><tr><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>粗利</th><th>人件費</th><th>家賃</th><th>他経費</th><th>営業利益</th></tr></thead><tbody>`;
+  <table><thead><tr><th>月</th><th>外来枚数</th><th>在宅</th><th>売上高</th><th>仕入原価</th><th>粗利</th><th>人件費</th><th>家賃</th><th>他経費</th><th>営業利益（小計）</th><th>本部経費・内部留保（店舗按分）</th><th>営業利益（按分後）</th></tr></thead><tbody>`;
   sc.months.filter(r=>r.year===1).forEach(r=>{
     const rx=r.rxTotal||r.rxCount||0;
-    h+=`<tr><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td></tr>`;
+    h+=`<tr><td>${r.month}</td><td>${fmt(rx)}</td><td>${r.homecareCount||0}</td><td>${fmt(r.revenue)}</td><td>${fmt(r.cogs)}</td><td>${fmt(r.grossProfit)}</td><td>${fmt(r.staffCost)}</td><td>${fmt(r.rent)}</td><td>${fmt(r.otherCost)}</td><td class="${r.operatingProfit>=0?'pos':'neg'}">${fmt(r.operatingProfit)}</td><td>${fmt(r.hqAlloc||0)}</td><td class="${(r.operAfterHq||0)>=0?'pos':'neg'}">${fmt(r.operAfterHq||0)}</td></tr>`;
   });
   const y1=an[0];
-  h+=`<tr style="font-weight:700;background:#f0e6ff"><td>合計</td><td></td><td></td><td>${fmtOku(y1.revenue)}</td><td></td><td>${fmtOku(y1.grossProfit)}</td><td></td><td></td><td></td><td class="${y1.operatingProfit>=0?'pos':'neg'}">${fmtOku(y1.operatingProfit)}</td></tr>`;
+  h+=`<tr style="font-weight:700;background:#f0e6ff"><td>合計</td><td></td><td></td><td>${fmtOku(y1.revenue)}</td><td></td><td>${fmtOku(y1.grossProfit)}</td><td></td><td></td><td></td><td class="${y1.operatingProfit>=0?'pos':'neg'}">${fmtOku(y1.operatingProfit)}</td><td>${fmtOku(y1.hqAlloc)}</td><td class="${y1.operAfterHq>=0?'pos':'neg'}">${fmtOku(y1.operAfterHq)}</td></tr>`;
   h+=`</tbody></table>`;
+  h+=`<p style="font-size:8pt;color:#666;margin:-8px 0 12px">※本部経費（按分）＝役員経費＋本部経費＋内部留保（予実表budget-toolと同じ定義）</p>`;
   h+=`</div>`;
 
   // === 8. 月次損益計画（2〜4年目）四半期サマリ ===
