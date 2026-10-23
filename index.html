@@ -543,27 +543,57 @@ function setSaveIndicator(state,detail){
   if(!el)return;
   el.className='save-indicator '+state;
   if(state==='saving'){el.textContent='保存中…';el.onclick=null;}
-  else if(state==='saved'){el.textContent='✓ 保存済み';el.onclick=null;}
+  else if(state==='saved'){el.textContent='✓ 保存済み'+(detail?'（'+detail+'）':'');el.title=detail||'';el.onclick=null;}
   else if(state==='error'){el.textContent='⚠️ 保存エラー'+(detail?'：'+detail:'')+'（クリックで再試行）';el.title=detail||'';el.onclick=retrySaveNow;}
   else if(state==='pending'){el.textContent='● 未保存の変更';el.onclick=null;}
   else{el.textContent='';el.onclick=null;}
 }
+// 2026-10-23: Firestore は undefined を受け付けない（invalid-argument: Unsupported field value: undefined）。配列要素の中にあると
+// エラー文にフィールド名が出ず原因を特定できない（10/22 越谷で保存不能）。保存前に undefined の位置を列挙してコンソールと
+// ドキュメントの saveDiag に残し、送信ペイロードからは取り除く（オブジェクトの undefined プロパティは削除・配列の undefined 要素は除外）。
+// Timestamp / FieldValue 等のクラスインスタンスは走査せずそのまま通す。saveDiag は次の正常保存（set の全置換）で自然に消える。
+function isPlainObject(v){if(v===null||typeof v!=='object')return false;const p=Object.getPrototypeOf(v);return p===Object.prototype||p===null;}
+function findUndefinedPaths(v,base,out,limit){
+  if(out.length>=limit)return out;
+  if(Array.isArray(v)){v.forEach((x,i)=>{const p=base+'['+i+']';if(x===undefined){if(out.length<limit)out.push(p);}else findUndefinedPaths(x,p,out,limit);});}
+  else if(isPlainObject(v)){Object.keys(v).forEach(k=>{const p=base?base+'.'+k:k;if(v[k]===undefined){if(out.length<limit)out.push(p);}else findUndefinedPaths(v[k],p,out,limit);});}
+  return out;
+}
+function stripUndefined(v){
+  if(Array.isArray(v))return v.filter(x=>x!==undefined).map(stripUndefined);
+  if(isPlainObject(v)){const o={};Object.keys(v).forEach(k=>{if(v[k]!==undefined)o[k]=stripUndefined(v[k]);});return o;}
+  return v;
+}
+let lastSaveDiag=null;
+function buildStorePayload(){
+  const{id,...d}=storeData;
+  const paths=findUndefinedPaths(d,'',[],30);
+  const payload={...stripUndefined(d),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email};
+  if(paths.length){
+    lastSaveDiag={at:new Date().toISOString(),undefinedPaths:paths};
+    console.warn('[store-sim] 保存前に undefined の値を除外しました:',paths);
+    payload.saveDiag=lastSaveDiag;
+  }else lastSaveDiag=null;
+  return payload;
+}
+function savedDetail(){return lastSaveDiag?('未定義の値 '+lastSaveDiag.undefinedPaths.length+' 件を除外: '+lastSaveDiag.undefinedPaths.slice(0,3).join(', ')):'';}
 // 実際のFirestore書込本体（saveStoreDebouncedのdebounce満了時・再試行クリック時に呼ばれる）
 async function doStoreWrite(){
   if(!canEdit||!storeData)return;
   const myGen=saveGeneration;
   setSaveIndicator('saving');
   try{
-    const{id,...d}=storeData;
-    await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});
+    const{id}=storeData;
+    const payload=buildStorePayload();
+    await db.collection('store_simulations').doc(id).set(payload);
     // 書込中にさらに新しい変更が来ていたら「保存済み」と表示しない（次のdebounceが追って保存する）
-    if(myGen===saveGeneration){hasUnsavedChanges=false;setSaveIndicator('saved');}
+    if(myGen===saveGeneration){hasUnsavedChanges=false;setSaveIndicator('saved',savedDetail());}
     else{setSaveIndicator('pending');}
   }catch(e){
     console.error('[store-sim save failed]',e&&e.code,e&&e.message,e);
     hasUnsavedChanges=true;
     // 2026-10-22: 失敗理由（Firestoreのエラーコードとメッセージ）を画面にも出す。DevToolsを開かなくても原因が分かるようにする
-    setSaveIndicator('error',((e&&e.code)?e.code+' ':'')+String((e&&e.message)||e||'').slice(0,120));
+    setSaveIndicator('error',((e&&e.code)?e.code+' ':'')+String((e&&e.message)||e||'').slice(0,200));
   }
 }
 function retrySaveNow(){
@@ -581,9 +611,9 @@ async function saveStoreDebounced(){
 }
 async function saveStoreNow(){
   if(!canEdit||!storeData)return;clearTimeout(saveTimer);
-  try{const{id,...d}=storeData;await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});alert('保存しました');}catch(e){alert('保存失敗:'+e.message);}
+  try{const{id}=storeData;await db.collection('store_simulations').doc(id).set(buildStorePayload());alert('保存しました'+(lastSaveDiag?'（'+savedDetail()+'）':''));}catch(e){alert('保存失敗:'+e.message);}
 }
-async function saveStoreImmediate(){if(!canEdit||!storeData)return;const{id,...d}=storeData;await db.collection('store_simulations').doc(id).set({...d,updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});}
+async function saveStoreImmediate(){if(!canEdit||!storeData)return;const{id}=storeData;await db.collection('store_simulations').doc(id).set(buildStorePayload());}
 
 function addStore(){showModal('店舗追加','<input id="mi" placeholder="店舗名">',async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;const ref=await db.collection('store_simulations').add({name:n,master:{...DEFAULT_MASTER},staffTypes:JSON.parse(JSON.stringify(DEFAULT_STAFF_TYPES)),confirmedStaff:cloneConfirmedStaff(),investment:defaultInvestment(),scenarios:[{name:'楽観',settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()},{name:'標準',settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()},{name:'保守',settings:{...DEFAULT_SC_SETTINGS},months:emptyMonths()}],createdAt:firebase.firestore.FieldValue.serverTimestamp(),updatedAt:firebase.firestore.FieldValue.serverTimestamp(),updatedBy:currentUser.email});currentStoreId=ref.id;closeModal();await loadStoreList();});}
 function renameStore(){if(!storeData)return;showModal('店舗名変更',`<input id="mi" value="${storeData.name}">`,async()=>{const n=document.getElementById('mi').value.trim();if(!n)return;storeData.name=n;await db.collection('store_simulations').doc(storeData.id).update({name:n});const it=storeList.find(s=>s.id===storeData.id);if(it)it.name=n;renderStoreSelect();closeModal();});}
