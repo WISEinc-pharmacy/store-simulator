@@ -393,6 +393,19 @@ function recalcScenario(sc, master, staffTypes){
   sc.months.forEach(r=>calcRow(r, master, sc.settings, staffTypes));
 }
 
+// 月データ正規化: buildColsのinput列（外来枚数・在宅件数・スタッフ人数・地域支援加算単価・本部経費等、数値入力列のみ）の
+// キーが欠損またはundefinedの月に既定値0を補う。読込直後(loadStore)と年内一括反映直後(copyYear)に呼び、
+// 列追加前に保存された旧データの月や、コピー元が値を持たないケースでexplicit undefinedが生成・伝播するのを止める。
+// 2026-10-24: 地域支援加算単価(regionalPerRx)が年コピーでundefined化しFirestore保存から除外され続けていたため追加。
+function normalizeMonths(months, master, staffTypes){
+  if(!Array.isArray(months))return;
+  const inputCols=buildCols(master,staffTypes).filter(c=>c.type==='input');
+  months.forEach(m=>{
+    if(!m||typeof m!=='object')return;
+    inputCols.forEach(c=>{ if(!(c.key in m)||m[c.key]===undefined) m[c.key]=0; });
+  });
+}
+
 function emptyMonths(){
   return Array.from({length:48},(_,i)=>({
     month:i+1, year:Math.ceil((i+1)/12),
@@ -540,6 +553,8 @@ async function loadStore(id){
   }
   storeData.scenarios.forEach(sc=>{
     if(!sc.settings) sc.settings={...DEFAULT_SC_SETTINGS};
+    // 読込直後: 列追加前に保存された旧データの月に欠損している入力列キーへ既定値0を補う（2026-10-24 regionalPerRx undefined化対策）
+    normalizeMonths(sc.months, storeData.master, storeData.staffTypes);
     recalcScenario(sc, storeData.master, storeData.staffTypes);
   });
   // activeTabを維持。該当シナリオタブが無い場合のみoverviewに戻す
@@ -560,7 +575,10 @@ function setSaveIndicator(state,detail){
 }
 // 2026-10-23: Firestore は undefined を受け付けない（invalid-argument: Unsupported field value: undefined）。配列要素の中にあると
 // エラー文にフィールド名が出ず原因を特定できない（10/22 越谷で保存不能）。保存前に undefined の位置を列挙してコンソールと
-// ドキュメントの saveDiag に残し、送信ペイロードからは取り除く（オブジェクトの undefined プロパティは削除・配列の undefined 要素は除外）。
+// ドキュメントの saveDiag に残し、送信ペイロードからは取り除く（オブジェクトの undefined プロパティは削除）。
+// 配列は要素の種類で挙動を分ける: プレーンオブジェクトを含む配列は undefined 要素を除外（従来どおり。month等の行オブジェクト配列で
+// 欠番を詰めない方が安全なケースと混在するため）。数値・文字列・真偽値のみの配列は undefined を null に置換し位置を保持する
+// （2026-10-24: regionalPerRx等の単純値配列で位置がズレると別フィールドの意味を持ってしまうため）。
 // Timestamp / FieldValue 等のクラスインスタンスは走査せずそのまま通す。saveDiag は次の正常保存（set の全置換）で自然に消える。
 function isPlainObject(v){if(v===null||typeof v!=='object')return false;const p=Object.getPrototypeOf(v);return p===Object.prototype||p===null;}
 function findUndefinedPaths(v,base,out,limit){
@@ -570,7 +588,11 @@ function findUndefinedPaths(v,base,out,limit){
   return out;
 }
 function stripUndefined(v){
-  if(Array.isArray(v))return v.filter(x=>x!==undefined).map(stripUndefined);
+  if(Array.isArray(v)){
+    const hasPlainObj=v.some(x=>x!==undefined&&isPlainObject(x));
+    if(hasPlainObj)return v.filter(x=>x!==undefined).map(stripUndefined);
+    return v.map(x=>x===undefined?null:stripUndefined(x));
+  }
   if(isPlainObject(v)){const o={};Object.keys(v).forEach(k=>{if(v[k]!==undefined)o[k]=stripUndefined(v[k]);});return o;}
   return v;
 }
@@ -1134,10 +1156,13 @@ function copyYear(scIdx,yearIdx){
   if(!confirm(yn+'年目の1ヶ月目の入力値を年内の残り月に上書きします。よろしいですか？'))return;
   for(let ri=firstIdx+1;ri<=firstIdx+11&&ri<sc.months.length;ri++){
     inputCols.forEach(col=>{
-      sc.months[ri][col.key]=m1[col.key];
+      // コピー元(m1)がそのキーを持たない/undefinedの場合は0にする（列追加前に保存された月をコピー元にすると
+      // undefinedが年内の残り月へそのまま伝播するため。2026-10-24 regionalPerRx undefined化の直接原因）
+      sc.months[ri][col.key]=m1[col.key]!==undefined?m1[col.key]:0;
     });
     calcRow(sc.months[ri],storeData.master,sc.settings,storeData.staffTypes);
   }
+  normalizeMonths(sc.months,storeData.master,storeData.staffTypes); // 年内一括反映（月の延長）直後の正規化
   renderDataTable(sc,scIdx);
   saveStoreDebounced();
 }
